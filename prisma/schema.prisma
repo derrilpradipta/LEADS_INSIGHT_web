@@ -1,0 +1,30 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  nama      String
+  username  String   @unique
+  password  String
+  role      String   @default("STAFF") // Tambahkan ini: ADMIN atau STAFF
+  createdAt DateTime @default(now())
+  leads     Lead[]
+}
+
+model Lead {
+  id          String   @id @default(cuid())
+  tanggal     DateTime
+  webMasuk    Int
+  orderWaOts  Int
+  orderWeb    Int
+  closingRate Float
+  createdAt   DateTime @default(now())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id])
+}
