@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as pdf from 'pdf-parse';
+// Gunakan import biasa tanpa nama fungsi dulu
+// @ts-ignore
+import pdf from 'pdf-parse/lib/pdf-parse';
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,15 +11,17 @@ export async function POST(req: NextRequest) {
     if (!file) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const data = await pdf(buffer);
+    
+    // Gunakan pengecekan manual atau casting agar TypeScript tidak komplain
+    // @ts-ignore
+    const parse = typeof pdf === 'function' ? pdf : pdf.default;
+    const data = await parse(buffer);
 
-    // LOGIC PARSING: Memecah teks PDF menjadi baris data
-    // Berdasarkan file Anda, kita mencari baris yang mengandung tanggal (xx/xx/26)
-    const lines = data.text.split('\n');
+    const lines: string[] = data.text.split('\n');
     const leadsData = lines
-      .map(line => {
+      .map((line: string) => {
         const parts = line.trim().split(/\s+/);
-        // Contoh target baris: "1. 25/03/26 19 2 2 21"
+        // Mencari baris yang mengandung tanggal format /26
         if (parts.length >= 4 && parts[1]?.includes('/26')) {
           return {
             tanggal: parts[1],
@@ -28,10 +32,11 @@ export async function POST(req: NextRequest) {
         }
         return null;
       })
-      .filter(item => item !== null);
+      .filter((item): item is NonNullable<typeof item> => item !== null);
 
     return NextResponse.json({ success: true, data: leadsData });
   } catch (error) {
+    console.error("PDF Parse Error:", error);
     return NextResponse.json({ error: "Failed to parse PDF" }, { status: 500 });
   }
 }
