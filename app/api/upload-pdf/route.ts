@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-// Gunakan import biasa tanpa nama fungsi dulu
-// @ts-ignore
-import pdf from 'pdf-parse/lib/pdf-parse';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,9 +8,11 @@ export async function POST(req: NextRequest) {
     if (!file) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
 
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Solusi: Gunakan require di dalam fungsi untuk menghindari build error
+    const pdf = require('pdf-parse');
     
-    // Gunakan pengecekan manual atau casting agar TypeScript tidak komplain
-    // @ts-ignore
+    // Kadang library ini membungkus fungsinya di .default tergantung environment
     const parse = typeof pdf === 'function' ? pdf : pdf.default;
     const data = await parse(buffer);
 
@@ -25,9 +24,9 @@ export async function POST(req: NextRequest) {
         if (parts.length >= 4 && parts[1]?.includes('/26')) {
           return {
             tanggal: parts[1],
-            webMasuk: parseInt(parts[2]),
-            orderWaOts: parseInt(parts[3]),
-            orderWeb: parseInt(parts[4]),
+            webMasuk: parseInt(parts[2]) || 0,
+            orderWaOts: parseInt(parts[3]) || 0,
+            orderWeb: parseInt(parts[4]) || 0,
           };
         }
         return null;
@@ -35,8 +34,8 @@ export async function POST(req: NextRequest) {
       .filter((item): item is NonNullable<typeof item> => item !== null);
 
     return NextResponse.json({ success: true, data: leadsData });
-  } catch (error) {
+  } catch (error: any) {
     console.error("PDF Parse Error:", error);
-    return NextResponse.json({ error: "Failed to parse PDF" }, { status: 500 });
+    return NextResponse.json({ error: "Gagal memproses PDF" }, { status: 500 });
   }
 }
