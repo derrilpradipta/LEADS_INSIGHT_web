@@ -1,19 +1,34 @@
 "use client";
-
 import { useEffect, useState } from "react";
-import { Shield, Clock, Loader2 } from "lucide-react";
+import { Shield, Loader2 } from "lucide-react";
 
 interface UserData {
   id: string | number;
   nama: string;
   username: string;
   role: string;
-  lastInput: string | null;
+  lastInput: string | null; // Data utama yang ingin ditampilkan
 }
 
 export default function UserControlPage() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Fungsi helper format waktu yang konsisten
+  const formatLastSeen = (dateString: string | null) => {
+    if (!dateString) return "Belum ada aktivitas";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('id-ID', { 
+        day: 'numeric', 
+        month: 'short', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+    } catch (e) {
+      return "Format waktu salah";
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -30,106 +45,86 @@ export default function UserControlPage() {
   const handleUpdateRole = async (userId: string | number, newRole: string) => {
     const previousUsers = [...users];
     setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
-
     try {
       const res = await fetch("/api/user/update", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, newRole }),
       });
-
-      if (!res.ok) {
-        setUsers(previousUsers);
-        alert("Gagal memperbarui di database");
-      }
+      if (!res.ok) setUsers(previousUsers);
     } catch (err) {
       setUsers(previousUsers);
-      console.error("Network error:", err);
     }
   };
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  useEffect(() => { fetchUsers(); }, []);
 
   return (
-    <div className="p-4 lg:p-8 space-y-6">
-      <div className="bg-white rounded-2xl lg:rounded-[32px] border border-gray-100 shadow-sm overflow-hidden">
-        {/* Header Responsif */}
-        <div className="p-5 lg:p-6 border-b border-gray-50 flex items-center gap-3 lg:gap-4">
-          <div className="p-2.5 lg:p-3 bg-indigo-50 text-indigo-600 rounded-xl lg:rounded-2xl shadow-sm">
-            <Shield size={20} className="lg:w-6 lg:h-6" />
+    <div className="p-4 lg:p-8 space-y-5 bg-[#F8F9FC] min-h-screen pb-24 font-sans">
+      <div className="bg-white rounded-[28px] border border-gray-100 shadow-sm overflow-hidden">
+        {/* Header Section */}
+        <div className="p-5 border-b border-gray-50 flex items-center gap-4 bg-indigo-50/10">
+          <div className="p-2.5 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-100">
+            <Shield size={18} />
           </div>
           <div>
-            <h1 className="text-lg lg:text-xl font-bold text-gray-800 tracking-tight">User Control Panel</h1>
-            <p className="text-[10px] lg:text-sm text-gray-400 font-medium">Kelola hak akses dan aktivitas staff</p>
+            <h1 className="text-lg font-black text-gray-800 tracking-tight">User Control</h1>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Management Access</p>
           </div>
         </div>
 
-        {/* Wrapper Table untuk Horizontal Scroll di Mobile */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[650px]">
-            <thead className="bg-gray-50/50">
-              <tr>
-                <th className="px-6 lg:px-8 py-4 text-[9px] lg:text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nama & Username</th>
-                <th className="px-6 lg:px-8 py-4 text-[9px] lg:text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Terakhir Input</th>
-                <th className="px-6 lg:px-8 py-4 text-[9px] lg:text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Role Control</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {loading ? (
-                <tr>
-                  <td colSpan={3} className="py-20 text-center"><Loader2 className="animate-spin inline text-indigo-600" /></td>
-                </tr>
-              ) : users.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50/30 transition-colors">
-                  <td className="px-6 lg:px-8 py-4 lg:py-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 lg:w-10 lg:h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-xs lg:text-sm">
-                        {user.nama.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="text-sm lg:text-base font-bold text-gray-800 leading-none">{user.nama}</div>
-                        <div className="text-[10px] lg:text-xs text-gray-400 font-medium mt-1">@{user.username}</div>
-                      </div>
+        {/* List Section */}
+        <div className="divide-y divide-gray-50">
+          {loading ? (
+            <div className="py-20 text-center"><Loader2 className="animate-spin inline text-indigo-600" /></div>
+          ) : users.map((user) => (
+            <div key={user.id} className="p-4 flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                {/* Info User */}
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="w-10 h-10 bg-indigo-50 rounded-full flex-shrink-0 flex items-center justify-center text-indigo-600 font-black text-xs border border-indigo-100 uppercase">
+                    {user.nama.charAt(0)}
+                  </div>
+                  <div className="overflow-hidden">
+                    <div className="font-bold text-gray-800 text-sm truncate">{user.nama}</div>
+                    {/* Last Input Muncul di sini juga agar cepat terlihat */}
+                    <div className="text-[9px] text-gray-400 font-medium truncate">
+                       Last: {user.lastInput ? formatLastSeen(user.lastInput) : 'N/A'}
                     </div>
-                  </td>
-                  <td className="px-6 lg:px-8 py-4 lg:py-5 text-center">
-                    {user.lastInput ? (
-                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-600 rounded-full text-[9px] lg:text-[10px] font-black">
-                        <Clock size={10} />
-                        {new Date(user.lastInput).toLocaleString('id-ID', { 
-                          day: '2-digit', 
-                          month: 'short', 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </div>
-                    ) : (
-                      <span className="text-[10px] text-gray-300 italic font-medium">No Activity</span>
-                    )}
-                  </td>
-                  <td className="px-6 lg:px-8 py-4 lg:py-5 text-center">
-                    <div className="inline-flex p-1 bg-gray-100 rounded-xl border border-gray-200/50">
-                      {['ADMIN', 'STAFF'].map((r) => (
-                        <button
-                          key={r}
-                          onClick={() => handleUpdateRole(user.id, r)}
-                          className={`px-3 lg:px-5 py-1.5 rounded-lg text-[8px] lg:text-[9px] font-black tracking-widest transition-all duration-200 ${
-                            user.role?.toUpperCase() === r 
-                              ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5' 
-                              : 'text-gray-400 hover:text-gray-600'
-                          }`}
-                        >
-                          {r}
-                        </button>
-                      ))}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+
+                {/* Role Selector */}
+                <div className="flex p-1 bg-gray-100 rounded-xl border border-gray-200/50 flex-shrink-0">
+                  {['ADMIN', 'STAFF'].map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => handleUpdateRole(user.id, r)}
+                      className={`px-3 py-1.5 rounded-lg text-[9px] font-black tracking-widest transition-all ${
+                        user.role?.toUpperCase() === r 
+                          ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5' 
+                          : 'text-gray-400'
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Status Bar Dinamis */}
+              <div className="flex items-center justify-between px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="flex items-center gap-2">
+                  {/* Dot indikator: Hijau jika ada data, Abu-abu jika kosong */}
+                  <div className={`w-1.5 h-1.5 rounded-full ${user.lastInput ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`} />
+                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">Aktivitas Terakhir</span>
+                </div>
+                <span className={`text-[10px] font-bold ${user.lastInput ? 'text-indigo-600' : 'text-gray-400 italic'}`}>
+                  {formatLastSeen(user.lastInput)}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
