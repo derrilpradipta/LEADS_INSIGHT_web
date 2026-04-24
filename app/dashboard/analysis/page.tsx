@@ -13,7 +13,7 @@ export default function ConversionAnalysisPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/user?month=${selectedMonth}`);
+        const res = await fetch(`/api/staff-report?month=${selectedMonth}`);
         const json = await res.json();
         setData(json);
       } catch (error) {

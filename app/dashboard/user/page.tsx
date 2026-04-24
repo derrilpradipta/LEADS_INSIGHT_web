@@ -98,7 +98,13 @@ export default function UserControlPage() {
                     {user.lastInput ? (
                       <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-600 rounded-full text-[10px] font-black">
                         <Clock size={10} />
-                        {new Date(user.lastInput).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        {/* Format tanggal agar lebih rapi */}
+                        {new Date(user.lastInput).toLocaleString('id-ID', { 
+                          day: '2-digit', 
+                          month: 'short', 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
                       </div>
                     ) : (
                       <span className="text-[10px] text-gray-300 italic font-medium">No Activity</span>
@@ -112,7 +118,9 @@ export default function UserControlPage() {
                           key={r}
                           onClick={() => handleUpdateRole(user.id, r)}
                           className={`px-5 py-1.5 rounded-lg text-[9px] font-black tracking-widest transition-all duration-200 ${
-                            user.role === r 
+                            // Gunakan Optional Chaining (?.) dan toUpperCase() 
+                            // untuk memastikan data dari DB cocok dengan ['ADMIN', 'STAFF']
+                            user.role?.toUpperCase() === r 
                               ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5' 
                               : 'text-gray-400 hover:text-gray-600'
                           }`}

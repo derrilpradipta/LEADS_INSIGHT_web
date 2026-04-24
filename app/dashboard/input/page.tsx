@@ -14,21 +14,15 @@ export default function InputManualPage() {
 });
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedDate = e.target.value; // Ini formatnya YYYY-MM-DD
-    
+    const selectedDate = e.target.value;
     if (selectedDate) {
-      // 1. Ambil waktu saat ini
       const now = new Date();
-      const jam = String(now.getHours()).padStart(2, '0');
-      const menit = String(now.getMinutes()).padStart(2, '0');
-      const detik = String(now.getSeconds()).padStart(2, '0');
-
-      // 2. Gabungkan menggunakan variabel yang sudah dibuat di atas
-      // Hasilnya: "2026-04-23T12:07:10"
-      const fullDateTime = `${selectedDate}T${jam}:${menit}:${detik}`;
-
-      // 3. Update state
-      setFormData({ ...formData, tanggal: fullDateTime });
+      // Gunakan setHours untuk menggabungkan jam saat ini ke tanggal terpilih
+      now.setFullYear(parseInt(selectedDate.split('-')[0]));
+      now.setMonth(parseInt(selectedDate.split('-')[1]) - 1);
+      now.setDate(parseInt(selectedDate.split('-')[2]));
+      
+      setFormData({ ...formData, tanggal: now.toISOString() });
     }
   };
 

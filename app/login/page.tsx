@@ -25,7 +25,7 @@ export default function LoginPage() {
         
         // Simpan semua informasi penting ke localStorage
         localStorage.setItem('user_id', data.user.id);
-        localStorage.setItem('user_name', data.user.name);
+        localStorage.setItem('user_name', data.user.nama);
         localStorage.setItem('user_role', data.user.role);
         // localStorage.setItem('user_username', username); // Opsional untuk halaman profil
 

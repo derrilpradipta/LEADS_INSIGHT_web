@@ -17,7 +17,7 @@ export async function POST(request: Request) {
         message: "Login Berhasil",
         user: {
           id: user.id,
-          name: user.nama || user.username,
+          nama: user.nama || user.username,
           role: user.role // Kirim role (ADMIN/STAFF) dari database
         }
       }, { status: 200 });

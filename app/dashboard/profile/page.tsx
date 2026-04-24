@@ -13,10 +13,16 @@ export default function ProfilePage() {
   const [showNew, setShowNew] = useState(false);
 
   useEffect(() => {
-    // Ambil data dari localStorage atau API
-    const name = localStorage.getItem('user_name') || '';
-    const user = localStorage.getItem('user_username') || '';
-    setFormData(prev => ({ ...prev, nama: name, username: user }));
+    // Ambil data dari localStorage
+    const nameFromStorage = localStorage.getItem('user_name') || '';
+    const usernameFromStorage = localStorage.getItem('user_username') || '';
+    
+    // Update state formData agar input tidak kosong
+    setFormData(prev => ({ 
+      ...prev, 
+      nama: nameFromStorage, 
+      username: usernameFromStorage 
+    }));
   }, []);
 
   const handleUpdate = async (e: React.FormEvent) => {
