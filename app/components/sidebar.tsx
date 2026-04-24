@@ -14,7 +14,6 @@ export default function Sidebar() {
   
   const [userName, setUserName] = useState("User");
   const [role, setRole] = useState("");
-  // Logika baru untuk handle buka/tutup di mobile
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -41,12 +40,27 @@ export default function Sidebar() {
     ] : []),
   ];
 
-  const handleSignOut = () => {
-    localStorage.clear();
-    router.push('/login');
+  // UPDATE LOGIC SIGN OUT DISINI
+  const handleSignOut = async () => {
+    try {
+      // 1. Hapus Cookie di Server (API yang sudah kita buat tadi)
+      await fetch('/api/logout', { method: 'POST' });
+      
+      // 2. Bersihkan localStorage (Logic lama kamu)
+      localStorage.clear();
+      
+      // 3. Paksa pindah ke login dan hapus history browser (Replace)
+      // Menggunakan window.location.replace lebih ampuh daripada router.push 
+      // untuk memastikan Middleware langsung bekerja saat refresh.
+      window.location.replace('/login');
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Fallback: Tetap bersihkan lokal jika API gagal
+      localStorage.clear();
+      window.location.replace('/login');
+    }
   };
 
-  // Fungsi navigasi sambil menutup sidebar di mobile
   const navigateTo = (path: string) => {
     router.push(path);
     setIsOpen(false);
@@ -54,7 +68,6 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* 1. Tombol Hamburger (Hanya muncul di Mobile) */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="lg:hidden fixed top-4 left-4 z-[60] p-3 bg-indigo-600 text-white rounded-xl shadow-lg active:scale-95 transition-transform"
@@ -62,20 +75,17 @@ export default function Sidebar() {
         {isOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
-      {/* 2. Sidebar */}
       <aside className={`
         w-72 bg-[#0F172A] text-white flex flex-col h-screen fixed left-0 top-0 z-50 
         transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
         lg:translate-x-0
       `}>
-        {/* Brand / Logo */}
         <div className="p-8 flex items-center gap-3">
           <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center font-black text-xl">L</div>
           <span className="text-xl font-bold tracking-tight">LeadTrack</span>
         </div>
 
-        {/* Menu List */}
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
           {menuItems.map((item) => (
             <button
@@ -93,7 +103,6 @@ export default function Sidebar() {
           ))}
         </nav>
 
-        {/* User Info & Profil */}
         <div className="p-4 border-t border-slate-800 space-y-2">
           <Link href="/dashboard/profile" onClick={() => setIsOpen(false)}>
             <div className="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-2xl transition-all cursor-pointer border border-transparent active:scale-95">
@@ -117,7 +126,6 @@ export default function Sidebar() {
         </div>
       </aside>
 
-      {/* 3. Overlay / Backdrop (Muncul saat sidebar terbuka di mobile) */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"

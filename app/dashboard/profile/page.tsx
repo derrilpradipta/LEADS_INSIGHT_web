@@ -25,16 +25,25 @@ export default function ProfilePage() {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch('/api/user/update', {
-      method: 'PUT',
-      body: JSON.stringify(formData),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      alert("Profil Berhasil Diperbarui!");
-      localStorage.setItem('user_name', formData.nama);
-    } else {
-      alert(data.message);
+    try {
+      const res = await fetch('/api/user/update-profil', { // Arahkan ke API profile
+        method: 'POST', // Gunakan POST agar selaras dengan API
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert("Profil Berhasil Diperbarui!");
+        localStorage.setItem('user_name', formData.nama);
+        // Refresh halaman agar nama di Sidebar ikut berubah
+        window.location.reload(); 
+      } else {
+        alert(data.message || "Terjadi kesalahan");
+      }
+    } catch (error) {
+      alert("Gagal terhubung ke server");
     }
   };
 

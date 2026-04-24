@@ -27,6 +27,7 @@ export default function LoginPage() {
         localStorage.setItem('user_id', data.user.id);
         localStorage.setItem('user_name', data.user.nama);
         localStorage.setItem('user_role', data.user.role);
+        localStorage.setItem('user_username', data.user.username);
         // localStorage.setItem('user_username', username); // Opsional untuk halaman profil
 
         // Jika login sukses, langsung ke dashboard
