@@ -37,7 +37,7 @@ export async function GET() {
         nama: true,
         username: true,
         role: true,
-        lastInput: true, // pastikan kolom ini ada di schema.prisma
+        // lastInput: true, // pastikan kolom ini ada di schema.prisma
       },
       orderBy: { nama: 'asc' }
     });
