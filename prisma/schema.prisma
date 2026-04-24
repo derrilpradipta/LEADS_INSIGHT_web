@@ -12,7 +12,7 @@ model User {
   nama      String
   username  String   @unique
   password  String
-  role      String   @default("STAFF") // Tambahkan ini: ADMIN atau STAFF
+  role      String   @default("ADMIN") // Tambahkan ini: ADMIN atau STAFF
   createdAt DateTime @default(now())
   leads     Lead[]
 }
