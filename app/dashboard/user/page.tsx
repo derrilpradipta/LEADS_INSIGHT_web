@@ -17,7 +17,7 @@ export default function UserControlPage() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch("/api/user");
+      const res = await fetch("/api/user/");
       const data = await res.json();
       setUsers(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -33,7 +33,7 @@ export default function UserControlPage() {
     setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
 
     try {
-      const res = await fetch("/api/user", {
+      const res = await fetch("/api/user/update", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, newRole }),
