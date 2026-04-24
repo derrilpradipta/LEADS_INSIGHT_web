@@ -58,9 +58,8 @@ export default function DashboardPage() {
     loadData();
   }, []);
 
-  // --- LOGIKA GROUPING PER TANGGAL (UNTUK GRAFIK & TABEL) ---
+  // --- LOGIKA GROUPING PER TANGGAL ---
   const groupedByDate = leads.reduce((acc: any, curr) => {
-    // Gunakan format DD/MM/YYYY sebagai key unik agar data per hari menyatu
     const dateKey = new Date(curr.tanggal).toLocaleDateString('id-ID', { 
       day: '2-digit', 
       month: '2-digit',
@@ -70,7 +69,7 @@ export default function DashboardPage() {
     if (!acc[dateKey]) {
       acc[dateKey] = {
         tanggal: dateKey,
-        name: dateKey.substring(0, 5), // Untuk label grafik (DD/MM)
+        name: dateKey.substring(0, 5),
         webMasuk: 0,
         orderWeb: 0,
         orderWaOts: 0,
@@ -84,7 +83,6 @@ export default function DashboardPage() {
     return acc;
   }, {});
 
-  // Ubah hasil grouping menjadi Array dan hitung CR-nya
   const finalGroupedData = Object.values(groupedByDate).map((item: any) => ({
     ...item,
     cr: item.webMasuk > 0 
@@ -97,35 +95,41 @@ export default function DashboardPage() {
   const avgCR = totalLeads > 0 ? ((totalOrders / totalLeads) * 100).toFixed(1) : "0";
 
   return (
-    <div className="space-y-6 pb-10 p-6 bg-[#F8F9FC] min-h-screen">
-      {/* 1. HEADER */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Conversion Intelligence</h1>
-        <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm">
+    <div className="space-y-6 pb-10">
+      {/* 1. HEADER - Stack on Mobile, Row on Desktop */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-xl lg:text-2xl font-bold text-gray-800 tracking-tight">Conversion Intelligence</h1>
+          <p className="text-xs lg:text-sm text-gray-400 font-medium">Real-time performance monitoring</p>
+        </div>
+        <button 
+          onClick={() => fileInputRef.current?.click()} 
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm active:scale-95"
+        >
           <Upload size={16} /> Upload PDF
         </button>
         <input type="file" ref={fileInputRef} className="hidden" accept=".pdf" />
       </div>
 
-      {/* 2. STAT CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {/* 2. STAT CARDS - Responsive Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         <StatCard title="Total Leads" value={totalLeads} sub="TOTAL WEB MASUK" icon={<Users />} color="text-indigo-600" bg="bg-indigo-50" />
         <StatCard title="Conversion Rate" value={`${avgCR}%`} sub="AVG CLOSING" icon={<TrendingUp />} color="text-green-600" bg="bg-green-50" />
         <StatCard title="Order Web" value={leads.reduce((a,b)=>a+b.orderWeb,0)} sub="MAIN SOURCE" icon={<ShoppingBag />} color="text-orange-600" bg="bg-orange-50" />
         <StatCard title="Order WA/OTS" value={leads.reduce((a,b)=>a+b.orderWaOts,0)} sub="DIRECT CHANNELS" icon={<MessageCircle />} color="text-blue-600" bg="bg-blue-50" />
       </div>
 
-      {/* 3. GRAFIK TREND & CR ANALYSIS (GROUPED) */}
+      {/* 3. CHARTS - Stack on Mobile */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm h-[400px]">
-          <div className="flex justify-between mb-6">
-            <h3 className="font-bold text-gray-800">Daily Trend Analysis</h3>
-            <div className="flex gap-4 text-[10px] font-bold text-gray-400">
+        <div className="lg:col-span-2 bg-white p-4 lg:p-6 rounded-2xl lg:rounded-[32px] border border-gray-100 shadow-sm h-[350px] lg:h-[400px]">
+          <div className="flex flex-col sm:flex-row justify-between mb-6 gap-2">
+            <h3 className="font-bold text-gray-800 text-sm lg:text-base">Daily Trend Analysis</h3>
+            <div className="flex flex-wrap gap-3 text-[9px] lg:text-[10px] font-bold text-gray-400">
               <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-orange-500"/> ORDER WEB</span>
               <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500"/> ORDER WA/OTS</span>
             </div>
           </div>
-          <div className="h-full w-full" style={{ height: '85%' }}>
+          <div className="h-full w-full" style={{ height: '75%' }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={finalGroupedData}>
                 <defs>
@@ -143,9 +147,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm h-[400px]">
-          <h3 className="font-bold text-gray-800 mb-6">Daily Closing Rate (%)</h3>
-          <div className="h-full w-full" style={{ height: '85%' }}>
+        <div className="bg-white p-4 lg:p-6 rounded-2xl lg:rounded-[32px] border border-gray-100 shadow-sm h-[350px] lg:h-[400px]">
+          <h3 className="font-bold text-gray-800 mb-6 text-sm lg:text-base">Daily Closing Rate (%)</h3>
+          <div className="h-full w-full" style={{ height: '75%' }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={finalGroupedData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
@@ -163,14 +167,16 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 4. TABLE MONITORING (GROUPED BY DATE) */}
-      <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-gray-50 flex justify-between">
+      {/* 4. TABLE - Horizontal Scroll for Mobile */}
+      <div className="bg-white rounded-2xl lg:rounded-[32px] border border-gray-100 shadow-sm overflow-hidden">
+        <div className="p-5 lg:p-6 border-b border-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <h3 className="font-bold text-gray-800">Daily Performance Monitoring</h3>
-          <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">{finalGroupedData.length} DAYS RECORDED</span>
+          <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-wider">
+            {finalGroupedData.length} Days Recorded
+          </span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[700px]">
             <thead className="bg-gray-50/50">
               <tr>
                 <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase">Tanggal</th>
@@ -183,10 +189,10 @@ export default function DashboardPage() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {loading ? (
-                <tr><td colSpan={6} className="text-center py-10"><Loader2 className="animate-spin inline mr-2"/> Menghitung data harian...</td></tr>
+                <tr><td colSpan={6} className="text-center py-10"><Loader2 className="animate-spin inline mr-2 text-indigo-600"/> Menghitung data...</td></tr>
               ) : finalGroupedData.length === 0 ? (
                 <tr><td colSpan={6} className="text-center py-10 text-gray-400">Tidak ada data leads.</td></tr>
-              ) : finalGroupedData.reverse().map((item, index) => (
+              ) : [...finalGroupedData].reverse().map((item, index) => (
                 <tr key={index} className="hover:bg-gray-50/30 transition-colors">
                   <td className="px-6 py-4 text-sm font-bold text-gray-700">{item.tanggal}</td>
                   <td className="px-6 py-4 text-sm text-center font-bold text-indigo-600">{item.webMasuk}</td>
@@ -210,14 +216,14 @@ export default function DashboardPage() {
 
 function StatCard({ title, value, sub, icon, color, bg }: any) {
   return (
-    <div className="bg-white p-6 rounded-[28px] border border-gray-100 shadow-sm">
+    <div className="bg-white p-5 lg:p-6 rounded-2xl lg:rounded-[28px] border border-gray-100 shadow-sm">
       <div className="flex justify-between items-start">
         <div>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{title}</p>
-          <p className="text-3xl font-black text-gray-900 mt-2">{value}</p>
-          <p className={`text-[10px] font-bold mt-1 uppercase ${color}`}>{sub}</p>
+          <p className="text-[9px] lg:text-[10px] font-bold text-gray-400 uppercase tracking-widest">{title}</p>
+          <p className="text-2xl lg:text-3xl font-black text-gray-900 mt-2">{value}</p>
+          <p className={`text-[9px] lg:text-[10px] font-bold mt-1 uppercase ${color}`}>{sub}</p>
         </div>
-        <div className={`p-3 rounded-2xl ${bg} ${color}`}>{icon}</div>
+        <div className={`p-2.5 lg:p-3 rounded-xl lg:rounded-2xl ${bg} ${color}`}>{icon}</div>
       </div>
     </div>
   );
