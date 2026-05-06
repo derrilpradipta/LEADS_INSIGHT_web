@@ -102,13 +102,6 @@ export default function DashboardPage() {
           <h1 className="text-xl lg:text-2xl font-bold text-gray-800 tracking-tight">Conversion Intelligence</h1>
           <p className="text-xs lg:text-sm text-gray-400 font-medium">Real-time performance monitoring</p>
         </div>
-        <button 
-          onClick={() => fileInputRef.current?.click()} 
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm active:scale-95"
-        >
-          <Upload size={16} /> Upload PDF
-        </button>
-        <input type="file" ref={fileInputRef} className="hidden" accept=".pdf" />
       </div>
 
       {/* 2. STAT CARDS - Responsive Grid */}
