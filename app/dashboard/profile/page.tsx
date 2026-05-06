@@ -15,6 +15,7 @@ export default function ProfilePage() {
   useEffect(() => {
     const nameFromStorage = localStorage.getItem('user_name') || '';
     const usernameFromStorage = localStorage.getItem('user_username') || '';
+    document.title = 'Profile'
     
     setFormData(prev => ({ 
       ...prev, 

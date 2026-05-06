@@ -57,7 +57,10 @@ export default function UserControlPage() {
     }
   };
 
-  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => { fetchUsers(); 
+      document.title = 'User Control'
+    }, 
+  []);
 
   return (
     <div className="p-4 lg:p-8 space-y-5 bg-[#F8F9FC] min-h-screen pb-24 font-sans">

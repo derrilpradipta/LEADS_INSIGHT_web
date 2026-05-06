@@ -1,9 +1,16 @@
 "use client";
-import React, { useState } from 'react';
-import { Save, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Loader2, CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+
+
 export default function InputManualPage() {
+
+  useEffect(() => {
+    document.title = 'Input Data'
+  }, []);
+
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({

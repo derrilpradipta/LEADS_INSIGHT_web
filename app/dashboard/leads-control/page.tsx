@@ -30,6 +30,7 @@ export default function LeadsControlPage() {
     const role = localStorage.getItem("user_role");
     if (role !== "ADMIN") { router.push("/dashboard"); return; }
     fetchLeads();
+    document.title = 'Leads Control'
   }, []);
 
   const fetchLeads = async () => {

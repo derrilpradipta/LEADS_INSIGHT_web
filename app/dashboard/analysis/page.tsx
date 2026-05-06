@@ -10,6 +10,7 @@ export default function ConversionAnalysisPage() {
   const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
   useEffect(() => {
+  document.title = 'Analysis'
     const fetchData = async () => {
       setLoading(true);
       try {

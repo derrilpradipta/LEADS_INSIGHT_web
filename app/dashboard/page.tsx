@@ -10,6 +10,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, BarChart, Bar, Cell 
 } from 'recharts';
+import { Html } from 'next/document';
 
 interface Lead {
     id: string;
@@ -29,9 +30,10 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      const rawUid = localStorage.getItem('user_id');
-      const urole = localStorage.getItem('user_role');
-      const uid = rawUid ? parseInt(rawUid, 10) : null;
+    const rawUid = localStorage.getItem('user_id');
+    const urole = localStorage.getItem('user_role');
+    const uid = rawUid ? parseInt(rawUid, 10) : null;
+    document.title = 'Dashboard | LeadTrack'
 
       if (!uid && urole !== 'ADMIN') {
         setLoading(false);
