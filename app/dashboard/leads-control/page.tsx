@@ -1,5 +1,5 @@
 "use client";
-
+import FilterBar from "@/app/components/FilterBar";
 import { useEffect, useState } from "react";
 import { Loader2, Pencil, Trash2, Check, X } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -33,14 +33,23 @@ export default function LeadsControlPage() {
     document.title = 'Leads Control'
   }, []);
 
-  const fetchLeads = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/leads-control");
-      const data = await res.json();
-      setLeads(Array.isArray(data) ? data : []);
-    } catch { /* silent */ }
-    finally { setLoading(false); }
+  const fetchLeads = async (params?: string) => {
+  setLoading(true);
+  try {
+    const url = params ? `/api/leads-control?${params}` : "/api/leads-control";
+    const res = await fetch(url);
+    const data = await res.json();
+    setLeads(Array.isArray(data) ? data : []);
+  } catch { }
+  finally { setLoading(false); }
+};
+
+  const handleFilter = (values: any) => {
+    if (values.type === "month") {
+      fetchLeads(`month=${values.month}&year=${values.year}`);
+    } else if (values.from && values.to) {
+      fetchLeads(`from=${values.from}&to=${values.to}`);
+    }
   };
 
   // Group by date
@@ -104,6 +113,11 @@ export default function LeadsControlPage() {
         <h1 className="text-xl lg:text-2xl font-bold text-gray-800 tracking-tight">Leads Control</h1>
         <p className="text-xs lg:text-sm text-gray-400 font-medium">Kelola semua data leads per tanggal</p>
       </div>
+      <FilterBar
+        onFilter={handleFilter}
+        onReset={() => fetchLeads()}
+        showCompare={false}
+      />
 
       {Object.keys(grouped).length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center text-gray-400">

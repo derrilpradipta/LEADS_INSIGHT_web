@@ -1,11 +1,52 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Loader2, Calendar, Award, TrendingUp } from "lucide-react";
+import { Lead } from "@prisma/client";
 
 export default function ConversionAnalysisPage() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+
+  const [compareData, setCompareData] = useState<{
+    periodA: any[];
+    periodB: any[];
+    labelA: string;
+    labelB: string;
+  } | null>(null);
+
+  const handleCompare = async (values: { periodA: { from: string; to: string }; periodB: { from: string; to: string } }) => {
+  const rawUid = localStorage.getItem('user_id');
+  const urole = localStorage.getItem('user_role');
+  const uid = rawUid ? parseInt(rawUid, 10) : null;
+  const base = `/api/leads?userId=${uid}&role=${urole}`;
+
+  const [resA, resB] = await Promise.all([
+    fetch(`${base}&from=${values.periodA.from}&to=${values.periodA.to}`),
+    fetch(`${base}&from=${values.periodB.from}&to=${values.periodB.to}`),
+  ]);
+
+  const [dataA, dataB] = await Promise.all([resA.json(), resB.json()]);
+
+  const summarize = (data: Lead[]) => ({
+    webMasuk: data.reduce((a, b) => a + b.webMasuk, 0),
+    orderWeb: data.reduce((a, b) => a + b.orderWeb, 0),
+    orderWaOts: data.reduce((a, b) => a + b.orderWaOts, 0),
+    totalOrder: data.reduce((a, b) => a + b.orderWeb + b.orderWaOts, 0),
+    cr: data.reduce((a, b) => a + b.webMasuk, 0) > 0
+        ? ((data.reduce((a, b) => a + b.orderWeb + b.orderWaOts, 0) / data.reduce((a, b) => a + b.webMasuk, 0)) * 100).toFixed(1)
+        : "0",
+    });
+
+    setCompareData({
+      periodA: [{ name: "Periode A", ...summarize(dataA) }],
+      periodB: [{ name: "Periode B", ...summarize(dataB) }],
+      labelA: `${values.periodA.from} s/d ${values.periodA.to}`,
+      labelB: `${values.periodB.from} s/d ${values.periodB.to}`,
+    });
+  };
+
+const handleCompareReset = () => setCompareData(null);
 
   const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 

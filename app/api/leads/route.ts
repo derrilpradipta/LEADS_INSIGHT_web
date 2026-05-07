@@ -39,20 +39,30 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
     const role = searchParams.get("role");
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
+    const month = searchParams.get("month");
+    const year = searchParams.get("year");
 
-    let whereClause = {};
+    let dateFilter: any = {};
 
-    // Jika bukan ADMIN, hanya boleh lihat inputan sendiri
+    if (from && to) {
+      dateFilter = { tanggal: { gte: new Date(from), lte: new Date(to + "T23:59:59") } };
+    } else if (month && year) {
+      const firstDay = new Date(Number(year), Number(month), 1);
+      const lastDay = new Date(Number(year), Number(month) + 1, 0, 23, 59, 59);
+      dateFilter = { tanggal: { gte: firstDay, lte: lastDay } };
+    }
+
+    let whereClause: any = { ...dateFilter };
     if (role !== "ADMIN") {
-      if (!userId || userId === "null") {
-        return NextResponse.json([], { status: 200 });
-      }
-      whereClause = { userId: Number(userId) };
+      if (!userId || userId === "null") return NextResponse.json([]);
+      whereClause.userId = Number(userId);
     }
 
     const leads = await prisma.lead.findMany({
       where: whereClause,
-      orderBy: { tanggal: 'desc' } // 'desc' agar data terbaru di atas
+      orderBy: { tanggal: "desc" },
     });
 
     return NextResponse.json(leads);
