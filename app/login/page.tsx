@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, {useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -9,6 +9,10 @@ export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
+  useEffect(() => {
+        document.title = 'Login'
+      }, 
+    []);
   // Ini adalah fungsi LOGIN, bukan register
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
