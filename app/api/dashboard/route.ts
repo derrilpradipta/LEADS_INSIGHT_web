@@ -44,9 +44,9 @@ export async function GET(request: Request) {
     // Kalkulasi data untuk dashboard
     const stats = {
       nama: userStats.nama || userStats.username,
-      monthlyWeb: monthlyLeads.reduce((acc, curr) => acc + (curr.orderWeb || 0), 0),
-      monthlyWA: monthlyLeads.reduce((acc, curr) => acc + (curr.orderWaOts || 0), 0),
-      totalLeadsMonth: monthlyLeads.reduce((acc, curr) => acc + (curr.webMasuk || 0), 0),
+      monthlyWeb: monthlyLeads.reduce((acc: number, curr: any) => acc + (curr.orderWeb || 0), 0),
+      monthlyWA: monthlyLeads.reduce((acc: number, curr: any) => acc + (curr.orderWaOts || 0), 0),
+      totalLeadsMonth: monthlyLeads.reduce((acc: number, curr: any) => acc + (curr.webMasuk || 0), 0),
     };
 
     return NextResponse.json(stats);
