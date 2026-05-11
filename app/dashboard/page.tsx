@@ -1,19 +1,9 @@
 "use client";
-import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
-import { Users, TrendingUp, ShoppingBag, MessageCircle, Loader2 } from 'lucide-react';
+import { Loader2, ArrowUp, ArrowDown, Minus, Globe, TrendingUp, ShoppingCart, MessageCircle } from 'lucide-react';
 import {
-  ComposedChart,
-  Line,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  Cell,
+  ComposedChart, Line, Area, XAxis, YAxis,
+  CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell,
 } from 'recharts';
 import FilterBar from "@/app/components/FilterBar";
 
@@ -27,35 +17,17 @@ interface Lead {
 }
 
 interface CompareData {
-  periodA: {
-    webMasuk: number;
-    orderWeb: number;
-    orderWaOts: number;
-    totalOrder: number;
-    cr: string;
-  };
-  periodB: {
-    webMasuk: number;
-    orderWeb: number;
-    orderWaOts: number;
-    totalOrder: number;
-    cr: string;
-  };
+  periodA: { webMasuk: number; orderWeb: number; orderWaOts: number; totalOrder: number; cr: string };
+  periodB: { webMasuk: number; orderWeb: number; orderWaOts: number; totalOrder: number; cr: string };
   labelA: string;
   labelB: string;
 }
 
-// ─── Helper: group leads by date, sorted ascending ───────────────────────────
 function groupLeadsByDate(data: Lead[]) {
   const map: Record<string, { tanggal: string; name: string; webMasuk: number; orderWeb: number; orderWaOts: number }> = {};
-  const sorted = [...data].sort((a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime());
-  sorted.forEach((curr) => {
-    const dateKey = new Date(curr.tanggal).toLocaleDateString('id-ID', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-    });
-    if (!map[dateKey]) {
-      map[dateKey] = { tanggal: dateKey, name: dateKey.substring(0, 5), webMasuk: 0, orderWeb: 0, orderWaOts: 0 };
-    }
+  [...data].sort((a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime()).forEach((curr) => {
+    const dateKey = new Date(curr.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    if (!map[dateKey]) map[dateKey] = { tanggal: dateKey, name: dateKey.substring(0, 5), webMasuk: 0, orderWeb: 0, orderWaOts: 0 };
     map[dateKey].webMasuk += Number(curr.webMasuk);
     map[dateKey].orderWeb += Number(curr.orderWeb);
     map[dateKey].orderWaOts += Number(curr.orderWaOts);
@@ -64,7 +36,6 @@ function groupLeadsByDate(data: Lead[]) {
 }
 
 export default function DashboardPage() {
-  const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [compareLeads, setCompareLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,138 +51,133 @@ export default function DashboardPage() {
     const rawUid = localStorage.getItem('user_id');
     const urole = localStorage.getItem('user_role');
     const uid = rawUid ? parseInt(rawUid, 10) : null;
-
-    if (!uid && urole !== 'ADMIN') {
-      setLoading(false);
-      return;
-    }
-
+    if (!uid && urole !== 'ADMIN') { setLoading(false); return; }
     try {
       const base = `/api/leads?userId=${uid}&role=${urole}`;
       const url = params ? `${base}&${params}` : base;
       const res = await fetch(url);
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
-      const validData = Array.isArray(data) ? data : [];
-      const sortedData = validData.sort((a: Lead, b: Lead) =>
-        new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime()
-      );
-      setLeads(sortedData);
-    } catch (err) {
-      console.error("Gagal load data:", err);
-    } finally {
-      setLoading(false);
-    }
+      setLeads(Array.isArray(data) ? data.sort((a: Lead, b: Lead) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime()) : []);
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
   const handleFilter = (values: any) => {
-    if (values.type === "month") {
-      loadData(`month=${values.month}&year=${values.year}`);
-    } else if (values.from && values.to) {
-      loadData(`from=${values.from}&to=${values.to}`);
-    }
+    if (values.type === "month") loadData(`month=${values.month}&year=${values.year}`);
+    else if (values.from && values.to) loadData(`from=${values.from}&to=${values.to}`);
   };
 
-  const handleCompare = async (values: {
-    periodA: { from: string; to: string };
-    periodB: { from: string; to: string };
-  }) => {
+  const handleCompare = async (values: { periodA: { from: string; to: string }; periodB: { from: string; to: string } }) => {
     const rawUid = localStorage.getItem('user_id');
     const urole = localStorage.getItem('user_role');
     const uid = rawUid ? parseInt(rawUid, 10) : null;
     const base = `/api/leads?userId=${uid}&role=${urole}`;
-
     loadData(`from=${values.periodA.from}&to=${values.periodA.to}`);
-
-    const resB = await fetch(`${base}&from=${values.periodB.from}&to=${values.periodB.to}`);
-    const dataB: Lead[] = await resB.json();
-    const validDataB = Array.isArray(dataB) ? dataB : [];
-    const sortedDataB = [...validDataB].sort(
-      (a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime()
-    );
-    setCompareLeads(sortedDataB);
-
-    const summarize = (data: Lead[]) => {
-      const webMasuk = data.reduce((a, b) => a + b.webMasuk, 0);
-      const orderWeb = data.reduce((a, b) => a + b.orderWeb, 0);
-      const orderWaOts = data.reduce((a, b) => a + b.orderWaOts, 0);
+    const [resA, resB] = await Promise.all([
+      fetch(`${base}&from=${values.periodA.from}&to=${values.periodA.to}`),
+      fetch(`${base}&from=${values.periodB.from}&to=${values.periodB.to}`),
+    ]);
+    const [dataA, dataB]: [Lead[], Lead[]] = await Promise.all([resA.json(), resB.json()]);
+    const validDataB = Array.isArray(dataB) ? dataB.sort((a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime()) : [];
+    setCompareLeads(validDataB);
+    const summarize = (d: Lead[]) => {
+      const webMasuk = d.reduce((a, b) => a + b.webMasuk, 0);
+      const orderWeb = d.reduce((a, b) => a + b.orderWeb, 0);
+      const orderWaOts = d.reduce((a, b) => a + b.orderWaOts, 0);
       const totalOrder = orderWeb + orderWaOts;
-      const cr = webMasuk > 0 ? ((totalOrder / webMasuk) * 100).toFixed(1) : "0";
-      return { webMasuk, orderWeb, orderWaOts, totalOrder, cr };
+      return { webMasuk, orderWeb, orderWaOts, totalOrder, cr: webMasuk > 0 ? ((totalOrder / webMasuk) * 100).toFixed(1) : "0" };
     };
-
-    const resA = await fetch(`${base}&from=${values.periodA.from}&to=${values.periodA.to}`);
-    const dataA: Lead[] = await resA.json();
-    const validDataA = Array.isArray(dataA) ? dataA : [];
-
     setCompareData({
-      periodA: summarize(validDataA),
+      periodA: summarize(Array.isArray(dataA) ? dataA : []),
       periodB: summarize(validDataB),
       labelA: `${values.periodA.from} s/d ${values.periodA.to}`,
       labelB: `${values.periodB.from} s/d ${values.periodB.to}`,
     });
   };
 
-  const handleCompareReset = () => {
-    setCompareData(null);
-    setCompareLeads([]);
-    loadData();
-  };
+  const handleCompareReset = () => { setCompareData(null); setCompareLeads([]); loadData(); };
 
-  // ── Grouped data ──
   const groupedA = groupLeadsByDate(leads);
   const groupedB = groupLeadsByDate(compareLeads);
-
-  // ── Chart data mode normal ──
-  const normalChartData = groupedA.map((item) => ({
-    ...item,
-    cr: item.webMasuk > 0 ? ((item.orderWeb + item.orderWaOts) / item.webMasuk) * 100 : 0,
-  }));
-
-  // ── Chart data mode compare: index = hari ke-N ──
+  const normalChartData = groupedA.map(item => ({ ...item, cr: item.webMasuk > 0 ? ((item.orderWeb + item.orderWaOts) / item.webMasuk) * 100 : 0 }));
   const maxLen = Math.max(groupedA.length, groupedB.length);
-  const compareChartData = Array.from({ length: maxLen }, (_, i) => {
-    const a = groupedA[i];
-    const b = groupedB[i];
-    return {
-      day: i + 1,
-      tanggalA: a?.name ?? '-',
-      tanggalB: b?.name ?? '-',
-      orderWebA: a?.orderWeb ?? null,
-      orderWaOtsA: a?.orderWaOts ?? null,
-      orderWebB: b?.orderWeb ?? null,
-      orderWaOtsB: b?.orderWaOts ?? null,
-    };
-  });
-
-  // ── CR chart (periode A) ──
-  const crChartData = groupedA.map((item) => ({
-    name: item.name,
-    cr: item.webMasuk > 0 ? ((item.orderWeb + item.orderWaOts) / item.webMasuk) * 100 : 0,
+  const compareChartData = Array.from({ length: maxLen }, (_, i) => ({
+    day: i + 1,
+    tanggalA: groupedA[i]?.name ?? '-',
+    tanggalB: groupedB[i]?.name ?? '-',
+    orderWebA: groupedA[i]?.orderWeb ?? null,
+    orderWaOtsA: groupedA[i]?.orderWaOts ?? null,
+    orderWebB: groupedB[i]?.orderWeb ?? null,
+    orderWaOtsB: groupedB[i]?.orderWaOts ?? null,
   }));
+  const crChartData = groupedA.map(item => ({ name: item.name, cr: item.webMasuk > 0 ? ((item.orderWeb + item.orderWaOts) / item.webMasuk) * 100 : 0 }));
 
-  // ── Summary stats ──
   const totalLeads = leads.reduce((acc, curr) => acc + curr.webMasuk, 0);
   const totalOrders = leads.reduce((acc, curr) => acc + (curr.orderWeb + curr.orderWaOts), 0);
   const totalOrderWeb = leads.reduce((a, b) => a + b.orderWeb, 0);
   const totalOrderWa = leads.reduce((a, b) => a + b.orderWaOts, 0);
   const avgCR = totalLeads > 0 ? ((totalOrders / totalLeads) * 100).toFixed(1) : "0";
 
+  const metrics = [
+    {
+      label: "Total Leads",
+      value: totalLeads,
+      sub: "Web Masuk",
+      icon: Globe,
+      compareVal: compareData?.periodB.webMasuk,
+      accent: "#2563eb",
+      accentBg: "#eff6ff",
+      accentText: "text-blue-600",
+    },
+    {
+      label: "Conversion Rate",
+      value: `${avgCR}%`,
+      sub: "Avg Closing",
+      icon: TrendingUp,
+      compareVal: compareData ? `${compareData.periodB.cr}%` : undefined,
+      compareRaw: compareData ? parseFloat(compareData.periodB.cr) : undefined,
+      currentRaw: parseFloat(avgCR),
+      accent: "#16a34a",
+      accentBg: "#f0fdf4",
+      accentText: "text-emerald-600",
+    },
+    {
+      label: "Order Web",
+      value: totalOrderWeb,
+      sub: "Main Source",
+      icon: ShoppingCart,
+      compareVal: compareData?.periodB.orderWeb,
+      accent: "#7c3aed",
+      accentBg: "#f5f3ff",
+      accentText: "text-violet-600",
+    },
+    {
+      label: "Order WA/OTS",
+      value: totalOrderWa,
+      sub: "Direct Channel",
+      icon: MessageCircle,
+      compareVal: compareData?.periodB.orderWaOts,
+      accent: "#d97706",
+      accentBg: "#fffbeb",
+      accentText: "text-amber-600",
+    },
+  ];
+
   return (
-    <div className="space-y-6 pb-10">
-      {/* HEADER */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-xl lg:text-2xl font-bold text-gray-800 tracking-tight">Dashboard Monitoring</h1>
-          <p className="text-xs lg:text-sm text-gray-400 font-medium">
-            {compareData
-              ? <span className="text-indigo-500 font-bold">Mode Compare Aktif: {compareData.labelA} vs {compareData.labelB}</span>
-              : "Performance monitoring"}
-          </p>
-        </div>
+    <div className="space-y-5">
+
+      {/* ── HEADER ── */}
+      <div>
+        <h1 className="text-[22px] font-bold text-gray-900 tracking-tight leading-tight">Performance Dashboard</h1>
+        <p className="text-[13px] text-gray-400 mt-0.5">
+          {compareData
+            ? <span className="text-blue-500 font-medium">{compareData.labelA} <span className="text-gray-300 mx-1">vs</span> {compareData.labelB}</span>
+            : "Monitoring leads & konversi harian"}
+        </p>
       </div>
 
-      {/* FILTER */}
+      {/* ── FILTER ── */}
       <FilterBar
         onFilter={handleFilter}
         onReset={() => loadData()}
@@ -219,263 +185,298 @@ export default function DashboardPage() {
         onCompareReset={handleCompareReset}
       />
 
-      {/* STAT CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <StatCard
-          title="Total Leads"
-          value={totalLeads}
-          sub="TOTAL WEB MASUK"
-          icon={<Users />}
-          color="text-indigo-600"
-          bg="bg-indigo-50"
-          compareValue={compareData?.periodB.webMasuk}
-        />
-        <StatCard
-          title="Conversion Rate"
-          value={`${avgCR}%`}
-          sub="AVG CLOSING"
-          icon={<TrendingUp />}
-          color="text-green-600"
-          bg="bg-green-50"
-          compareValue={compareData ? `${compareData.periodB.cr}%` : undefined}
-          compareRaw={compareData ? parseFloat(compareData.periodB.cr) : undefined}
-          currentRaw={parseFloat(avgCR)}
-        />
-        <StatCard
-          title="Order Web"
-          value={totalOrderWeb}
-          sub="MAIN SOURCE"
-          icon={<ShoppingBag />}
-          color="text-orange-600"
-          bg="bg-orange-50"
-          compareValue={compareData?.periodB.orderWeb}
-        />
-        <StatCard
-          title="Order WA/OTS"
-          value={totalOrderWa}
-          sub="DIRECT CHANNELS"
-          icon={<MessageCircle />}
-          color="text-blue-600"
-          bg="bg-blue-50"
-          compareValue={compareData?.periodB.orderWaOts}
-        />
+      {/* ── METRICS — 4 kartu terpisah dengan accent kiri ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {metrics.map((m, i) => {
+          const Icon = m.icon;
+          const numVal = typeof m.value === 'string' ? parseFloat(m.value) : m.value;
+          const numCmp = m.compareRaw !== undefined ? m.compareRaw : (typeof m.compareVal === 'string' ? parseFloat(m.compareVal) : m.compareVal as number);
+          const diff = m.compareVal !== undefined ? numVal - numCmp : null;
+          const pct = diff !== null && numCmp > 0 ? ((diff / numCmp) * 100).toFixed(1) : null;
+
+          return (
+            <div key={i} className="bg-white border border-gray-200 rounded-lg overflow-hidden flex">
+              {/* Accent bar kiri */}
+              <div className="w-1 flex-shrink-0" style={{ background: m.accent }} />
+
+              <div className="flex-1 px-5 pt-3 pb-4.5 flex flex-col justify-between">
+                {/* Baris atas: label + icon */}
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">{m.label}</p>
+                  <div className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0" style={{ background: m.accentBg }}>
+                    <Icon size={14} style={{ color: m.accent }} />
+                  </div>
+                </div>
+
+                {/* Baris tengah: angka utama */}
+                <p className="text-[30px] font-bold text-gray-900 leading-none tabular-nums my-3">{m.value}</p>
+
+                {/* Baris bawah: sub label + compare */}
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] text-gray-400">{m.sub}</p>
+                  {pct !== null ? (
+                    <span className={`flex items-center gap-0.5 text-[11px] font-bold ${diff! >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                      {diff! > 0 ? <ArrowUp size={10} /> : diff! < 0 ? <ArrowDown size={10} /> : <Minus size={10} />}
+                      {Math.abs(parseFloat(pct))}%
+                    </span>
+                  ) : (
+                    <span className={`text-[11px] font-semibold ${m.accentText}`}>
+                      {i === 1 ? (parseFloat(avgCR) > 15 ? '↑ Baik' : '↓ Perlu Perhatian') : ''}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* CHARTS */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* ── CHARTS ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-        {/* ── Trend Chart ── */}
-        <div className="lg:col-span-2 bg-white p-4 lg:p-6 rounded-2xl lg:rounded-[32px] border border-gray-100 shadow-sm h-[350px] lg:h-[420px]">
-          <div className="flex flex-col sm:flex-row justify-between mb-4 gap-2">
-            <h3 className="font-bold text-gray-800 text-sm lg:text-base">Daily Trend Analysis</h3>
-
-            {/* Legend */}
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[9px] lg:text-[10px] font-bold text-gray-500">
+        {/* Trend Chart */}
+        <div className="lg:col-span-2 bg-white border border-gray-200 rounded-lg p-5">
+          <div className="flex items-start justify-between mb-5">
+            <div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tren Harian</p>
+              <h3 className="text-[14px] font-bold text-gray-800 mt-0.5">Order Web & WA/OTS</h3>
+            </div>
+            <div className="flex gap-3 text-[11px] font-medium text-gray-500 flex-shrink-0">
               {!compareData ? (
                 <>
-                  <span className="flex items-center gap-1.5">
-                    <svg width="20" height="3"><rect width="20" height="3" rx="1.5" fill="#f97316" /></svg>
-                    ORDER WEB
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <svg width="20" height="3"><rect width="20" height="3" rx="1.5" fill="#3b82f6" /></svg>
-                    ORDER WA/OTS
-                  </span>
+                  <span className="flex items-center gap-1.5"><span className="w-5 h-[2px] bg-blue-500 inline-block rounded-full" /> Web</span>
+                  <span className="flex items-center gap-1.5"><span className="w-5 h-[2px] bg-amber-400 inline-block rounded-full" /> WA/OTS</span>
                 </>
               ) : (
                 <>
                   <span className="flex items-center gap-1.5">
-                    <svg width="20" height="3"><rect width="20" height="3" rx="1.5" fill="#f97316" /></svg>
-                    Web (A)
+                    <span className="w-5 h-[2px] bg-blue-500 inline-block rounded-full" />
+                    Web A
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <svg width="20" height="3"><rect width="20" height="3" rx="1.5" fill="#3b82f6" /></svg>
-                    WA/OTS (A)
+                    <span className="w-5 h-[2px] bg-amber-400 inline-block rounded-full" />
+                    WA A
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <svg width="20" height="3">
-                      <line x1="0" y1="1.5" x2="20" y2="1.5" stroke="#fb923c" strokeWidth="2.5" strokeDasharray="5 3" />
-                    </svg>
-                    Web (B)
+                  <span className="flex items-center gap-1.5 opacity-80">
+                    <svg width="20" height="4" viewBox="0 0 20 4"><line x1="0" y1="2" x2="20" y2="2" stroke="#93c5fd" strokeWidth="2" strokeDasharray="4 2" /></svg>
+                    Web B
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <svg width="20" height="3">
-                      <line x1="0" y1="1.5" x2="20" y2="1.5" stroke="#60a5fa" strokeWidth="2.5" strokeDasharray="5 3" />
-                    </svg>
-                    WA/OTS (B)
+                  <span className="flex items-center gap-1.5 opacity-80">
+                    <svg width="20" height="4" viewBox="0 0 20 4"><line x1="0" y1="2" x2="20" y2="2" stroke="#fcd34d" strokeWidth="2" strokeDasharray="4 2" /></svg>
+                    WA B
                   </span>
                 </>
               )}
             </div>
           </div>
-
-          <div style={{ height: 'calc(100% - 60px)' }}>
+          <div style={{ height: 260 }}>
             <ResponsiveContainer width="100%" height="100%">
               {!compareData ? (
-                /* MODE NORMAL */
-                <ComposedChart data={normalChartData}>
+                <ComposedChart data={normalChartData} margin={{ left: -10, right: 4 }}>
                   <defs>
                     <linearGradient id="gWeb" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#f97316" stopOpacity={0.12} />
-                      <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.12} />
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="gWa" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.12} />
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                      <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.12} />
+                      <stop offset="100%" stopColor="#f59e0b" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 600 }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 600 }} />
-                  <Tooltip contentStyle={{ borderRadius: 16, border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
-                  <Area type="linear" dataKey="orderWeb" stroke="#f97316" strokeWidth={3} fillOpacity={1} fill="url(#gWeb)" name="Order Web" />
-                  <Area type="linear" dataKey="orderWaOts" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#gWa)" name="Order WA/OTS" />
+                  <CartesianGrid strokeDasharray="3 0" vertical={false} stroke="#f1f3f5" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 500 }} dy={6} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 500 }} width={24} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', fontSize: 12, padding: '8px 12px' }}
+                    cursor={{ stroke: '#e5e7eb', strokeWidth: 1 }}
+                  />
+                  <Area type="monotone" dataKey="orderWeb" stroke="#3b82f6" strokeWidth={2} fill="url(#gWeb)" name="Order Web" dot={false} />
+                  <Area type="monotone" dataKey="orderWaOts" stroke="#f59e0b" strokeWidth={2} fill="url(#gWa)" name="WA/OTS" dot={false} />
                 </ComposedChart>
               ) : (
-                /* MODE COMPARE — 4 garis, X = hari ke-N */
-                <ComposedChart data={compareChartData}>
+                <ComposedChart data={compareChartData} margin={{ left: -10, right: 4 }}>
                   <defs>
                     <linearGradient id="gWebA" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#f97316" stopOpacity={0.12} />
-                      <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.1} />
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="gWaA" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.12} />
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                      <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.1} />
+                      <stop offset="100%" stopColor="#f59e0b" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                  <XAxis
-                    dataKey="day"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 10, fontWeight: 600 }}
-                    dy={10}
-                    tickFormatter={(v) => `H${v}`}
-                  />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 600 }} />
-
-                  {/* Custom Tooltip menampilkan tanggal A dan B */}
+                  <CartesianGrid strokeDasharray="3 0" vertical={false} stroke="#f1f3f5" />
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 500 }} dy={6} tickFormatter={v => `H${v}`} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 500 }} width={24} />
                   <Tooltip
                     content={({ active, payload, label }) => {
                       if (!active || !payload?.length) return null;
                       const idx = (label as number) - 1;
-                      const tA = groupedA[idx]?.name ?? '-';
-                      const tB = groupedB[idx]?.name ?? '-';
+                      const tglA = groupedA[idx]?.name ?? '-';
+                      const tglB = groupedB[idx]?.name ?? '-';
+                      // Pisahkan payload A dan B
+                      const itemsA = payload.filter((e: any) => e.dataKey?.endsWith('A'));
+                      const itemsB = payload.filter((e: any) => e.dataKey?.endsWith('B'));
                       return (
-                        <div style={{
-                          background: '#fff',
-                          borderRadius: 16,
-                          boxShadow: '0 10px 30px -5px rgba(0,0,0,0.15)',
-                          padding: '12px 16px',
-                          minWidth: 210,
-                        }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <span style={{ fontSize: 10, fontWeight: 800, color: '#6366f1' }}>Hari ke-{label}</span>
-                          </div>
-                          <div style={{ display: 'flex', gap: 16, marginBottom: 8 }}>
-                            <span style={{ fontSize: 9, color: '#f97316', fontWeight: 700 }}>A: {tA}</span>
-                            <span style={{ fontSize: 9, color: '#94a3b8', fontWeight: 700 }}>B: {tB}</span>
-                          </div>
-                          {payload.map((entry: any, i: number) => (
-                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                              <div style={{
-                                width: 16, height: 2,
-                                background: entry.color,
-                                borderRadius: 1,
-                                borderTop: entry.strokeDasharray ? `2px dashed ${entry.color}` : 'none',
-                              }} />
-                              <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600, flex: 1 }}>{entry.name}</span>
-                              <span style={{ fontSize: 12, fontWeight: 800, color: '#1e293b' }}>
-                                {entry.value !== null && entry.value !== undefined ? entry.value : '-'}
-                              </span>
+                        <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', padding: '10px 14px', minWidth: 200 }}>
+                          {/* Periode A */}
+                          <p style={{ fontSize: 10, fontWeight: 700, color: '#3b82f6', marginBottom: 4 }}>{tglA}</p>
+                          {itemsA.map((e: any, i: number) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                              <div style={{ width: 12, height: 2, background: e.color, borderRadius: 1 }} />
+                              <span style={{ fontSize: 11, color: '#6b7280', flex: 1 }}>{e.dataKey === 'orderWebA' ? 'Order Web' : 'WA/OTS'}</span>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: '#111827' }}>{e.value ?? '-'}</span>
+                            </div>
+                          ))}
+                          {/* Divider */}
+                          <div style={{ borderTop: '1px solid #f1f5f9', margin: '6px 0' }} />
+                          {/* Periode B */}
+                          <p style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', marginBottom: 4 }}>{tglB}</p>
+                          {itemsB.map((e: any, i: number) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                              <svg width="12" height="4" viewBox="0 0 12 4" style={{ flexShrink: 0 }}><line x1="0" y1="2" x2="12" y2="2" stroke={e.color} strokeWidth="2" strokeDasharray="3 2" /></svg>
+                              <span style={{ fontSize: 11, color: '#6b7280', flex: 1 }}>{e.dataKey === 'orderWebB' ? 'Order Web' : 'WA/OTS'}</span>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: '#111827' }}>{e.value ?? '-'}</span>
                             </div>
                           ))}
                         </div>
                       );
                     }}
                   />
-
-                  {/* Periode A — solid + area fill */}
-                  <Area type="linear" dataKey="orderWebA" stroke="#f97316" strokeWidth={2.5}
-                    fill="url(#gWebA)" fillOpacity={1} name="Order Web (A)" dot={false} connectNulls />
-                  <Area type="linear" dataKey="orderWaOtsA" stroke="#3b82f6" strokeWidth={2.5}
-                    fill="url(#gWaA)" fillOpacity={1} name="WA/OTS (A)" dot={false} connectNulls />
-
-                  {/* Periode B — putus-putus, tanpa fill */}
-                  <Line type="linear" dataKey="orderWebB" stroke="#fb923c" strokeWidth={2}
-                    strokeDasharray="6 4" dot={false} name="Order Web (B)" connectNulls />
-                  <Line type="linear" dataKey="orderWaOtsB" stroke="#60a5fa" strokeWidth={2}
-                    strokeDasharray="6 4" dot={false} name="WA/OTS (B)" connectNulls />
+                  <Area type="monotone" dataKey="orderWebA" stroke="#3b82f6" strokeWidth={2} fill="url(#gWebA)" name="Web (A)" dot={false} connectNulls />
+                  <Area type="monotone" dataKey="orderWaOtsA" stroke="#f59e0b" strokeWidth={2} fill="url(#gWaA)" name="WA (A)" dot={false} connectNulls />
+                  <Line type="monotone" dataKey="orderWebB" stroke="#93c5fd" strokeWidth={1.5} strokeDasharray="5 3" dot={false} name="Web (B)" connectNulls />
+                  <Line type="monotone" dataKey="orderWaOtsB" stroke="#fcd34d" strokeWidth={1.5} strokeDasharray="5 3" dot={false} name="WA (B)" connectNulls />
                 </ComposedChart>
               )}
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* ── Bar Chart CR ── */}
-        <div className="bg-white p-4 lg:p-6 rounded-2xl lg:rounded-[32px] border border-gray-100 shadow-sm h-[350px] lg:h-[420px]">
-          <h3 className="font-bold text-gray-800 mb-6 text-sm lg:text-base">Daily Closing Rate (%)</h3>
-          <div style={{ height: 'calc(100% - 56px)' }}>
+        {/* CR Chart */}
+        <div className="bg-white border border-gray-200 rounded-lg p-5">
+          <div className="flex items-start justify-between mb-5">
+            <div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Closing Rate</p>
+              <h3 className="text-[14px] font-bold text-gray-800 mt-0.5">Performa Harian (%)</h3>
+            </div>
+            {compareData && (
+              <div className="flex gap-2.5 text-[11px] font-medium text-gray-500 flex-shrink-0">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm inline-block bg-blue-500" />
+                  {compareData.labelA.split(' ')[0]}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm inline-block bg-blue-200" />
+                  {compareData.labelB.split(' ')[0]}
+                </span>
+              </div>
+            )}
+          </div>
+          <div style={{ height: 260 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={crChartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 600 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 600 }} />
-                <Tooltip
-                  cursor={{ fill: '#f8fafc' }}
-                  contentStyle={{ borderRadius: 16, border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                  formatter={(v: any) => [`${Number(v).toFixed(1)}%`, "Closing Rate"]}
-                />
-                <Bar dataKey="cr" radius={[6, 6, 0, 0]} barSize={30}>
-                  {crChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.cr > 15 ? '#6366f1' : '#94a3b8'} />
-                  ))}
-                </Bar>
-              </BarChart>
+              {!compareData ? (
+                <BarChart data={crChartData} margin={{ left: -10, right: 4 }} barCategoryGap="40%">
+                  <CartesianGrid strokeDasharray="3 0" vertical={false} stroke="#f1f3f5" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 500 }} dy={6} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 500 }} width={24} />
+                  <Tooltip
+                    cursor={{ fill: '#f9fafb' }}
+                    contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', fontSize: 12, padding: '8px 12px' }}
+                    formatter={(v: any) => [`${Number(v).toFixed(1)}%`, "CR"]}
+                  />
+                  <Bar dataKey="cr" radius={[3, 3, 0, 0]}>
+                    {crChartData.map((entry, index) => (
+                      <Cell key={index} fill={entry.cr > 15 ? '#3b82f6' : '#e5e7eb'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              ) : (
+                <BarChart
+                  data={Array.from({ length: Math.max(groupedA.length, groupedB.length) }, (_, i) => ({
+                    day: i + 1,
+                    crA: groupedA[i]?.webMasuk > 0 ? ((groupedA[i].orderWeb + groupedA[i].orderWaOts) / groupedA[i].webMasuk) * 100 : 0,
+                    crB: groupedB[i]?.webMasuk > 0 ? ((groupedB[i].orderWeb + groupedB[i].orderWaOts) / groupedB[i].webMasuk) * 100 : 0,
+                    nameA: groupedA[i]?.name ?? '-',
+                    nameB: groupedB[i]?.name ?? '-',
+                  }))}
+                  margin={{ left: -10, right: 4 }}
+                  barCategoryGap="30%"
+                  barGap={2}
+                >
+                  <CartesianGrid strokeDasharray="3 0" vertical={false} stroke="#f1f3f5" />
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 500 }} dy={6} tickFormatter={v => `H${v}`} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 500 }} width={24} />
+                  <Tooltip
+                    cursor={{ fill: '#f9fafb' }}
+                    contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', fontSize: 12, padding: '8px 12px' }}
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      const d = payload[0]?.payload;
+                      return (
+                        <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', padding: '10px 14px', minWidth: 160 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                            <div style={{ width: 10, height: 10, borderRadius: 2, background: '#3b82f6' }} />
+                            <span style={{ fontSize: 11, color: '#6b7280' }}>{d?.nameA}</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: '#111827', marginLeft: 'auto' }}>{Number(d?.crA ?? 0).toFixed(1)}%</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ width: 10, height: 10, borderRadius: 2, background: '#93c5fd' }} />
+                            <span style={{ fontSize: 11, color: '#6b7280' }}>{d?.nameB}</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: '#111827', marginLeft: 'auto' }}>{Number(d?.crB ?? 0).toFixed(1)}%</span>
+                          </div>
+                        </div>
+                      );
+                    }}
+                  />
+                  <Bar dataKey="crA" name="CR A" radius={[3, 3, 0, 0]} fill="#3b82f6" />
+                  <Bar dataKey="crB" name="CR B" radius={[3, 3, 0, 0]} fill="#93c5fd" />
+                </BarChart>
+              )}
             </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      {/* TABLE */}
-      <div className="bg-white rounded-2xl lg:rounded-[32px] border border-gray-100 shadow-sm overflow-hidden">
-        <div className="p-5 lg:p-6 border-b border-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <h3 className="font-bold text-gray-800">Daily Performance Monitoring</h3>
-          <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-wider">
-            {normalChartData.length} Days Recorded
+      {/* ── TABLE ── */}
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Rekap Data</p>
+            <h3 className="text-[14px] font-bold text-gray-800 mt-0.5">Daily Performance Monitoring</h3>
+          </div>
+          <span className="text-[11px] font-semibold text-gray-400 bg-gray-50 border border-gray-200 px-3 py-1 rounded">
+            {normalChartData.length} hari tercatat
           </span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[700px]">
-            <thead className="bg-gray-50/50">
-              <tr>
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase">Tanggal</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase text-center">Web Masuk</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase text-center">Order Web</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase text-center">Order WA/OTS</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase text-center">Total Order</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase text-center">Closing Rate</th>
+          <table className="w-full min-w-[640px]">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/60">
+                <th className="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Tanggal</th>
+                <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Web Masuk</th>
+                <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order Web</th>
+                <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order WA/OTS</th>
+                <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total</th>
+                <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">CR</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-10">
-                    <Loader2 className="animate-spin inline mr-2 text-indigo-600" /> Menghitung data...
-                  </td>
-                </tr>
+                <tr><td colSpan={6} className="text-center py-14 text-gray-400 text-sm">
+                  <Loader2 className="animate-spin inline mr-2" size={15} /> Memuat data...
+                </td></tr>
               ) : normalChartData.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-10 text-gray-400">Tidak ada data leads.</td></tr>
+                <tr><td colSpan={6} className="text-center py-14 text-gray-400 text-sm">Tidak ada data.</td></tr>
               ) : [...normalChartData].reverse().map((item, index) => (
-                <tr key={index} className="hover:bg-gray-50/30 transition-colors">
-                  <td className="px-6 py-4 text-sm font-bold text-gray-700">{item.tanggal}</td>
-                  <td className="px-6 py-4 text-sm text-center font-bold text-indigo-600">{item.webMasuk}</td>
-                  <td className="px-6 py-4 text-sm text-center font-medium">{item.orderWeb}</td>
-                  <td className="px-6 py-4 text-sm text-center font-medium">{item.orderWaOts}</td>
-                  <td className="px-6 py-4 text-sm text-center font-black text-gray-800">{item.orderWeb + item.orderWaOts}</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className={`px-3 py-1 rounded-lg text-[10px] font-black ${item.cr > 15 ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'}`}>
+                <tr key={index} className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors">
+                  <td className="px-5 py-3.5 text-[13px] font-semibold text-gray-700">{item.tanggal}</td>
+                  <td className="px-5 py-3.5 text-[13px] text-right text-gray-600 tabular-nums">{item.webMasuk}</td>
+                  <td className="px-5 py-3.5 text-[13px] text-right text-gray-600 tabular-nums">{item.orderWeb}</td>
+                  <td className="px-5 py-3.5 text-[13px] text-right text-gray-600 tabular-nums">{item.orderWaOts}</td>
+                  <td className="px-5 py-3.5 text-[13px] text-right font-bold text-gray-900 tabular-nums">{item.orderWeb + item.orderWaOts}</td>
+                  <td className="px-5 py-3.5 text-right">
+                    <span className={`text-[12px] font-bold ${item.cr > 15 ? 'text-blue-600' : 'text-gray-400'}`}>
                       {item.cr.toFixed(1)}%
                     </span>
                   </td>
@@ -485,37 +486,7 @@ export default function DashboardPage() {
           </table>
         </div>
       </div>
-    </div>
-  );
-}
 
-// ─── StatCard ─────────────────────────────────────────────────────────────────
-function StatCard({ title, value, sub, icon, color, bg, compareValue, compareRaw, currentRaw }: any) {
-  const numValue = typeof value === 'string' ? parseFloat(value) : value;
-  const numCompare = compareRaw !== undefined ? compareRaw : (typeof compareValue === 'string' ? parseFloat(compareValue) : compareValue);
-  const diff = compareValue !== undefined ? numValue - numCompare : null;
-  const pct = (diff !== null && numCompare > 0) ? ((diff / numCompare) * 100).toFixed(1) : null;
-
-  return (
-    <div className="bg-white p-5 lg:p-6 rounded-2xl lg:rounded-[28px] border border-gray-100 shadow-sm">
-      <div className="flex justify-between items-start">
-        <div className="flex-1 min-w-0">
-          <p className="text-[9px] lg:text-[10px] font-bold text-gray-400 uppercase tracking-widest">{title}</p>
-          <p className="text-2xl lg:text-3xl font-black text-gray-900 mt-2">{value}</p>
-          {compareValue !== undefined && (
-            <p className="text-[10px] text-gray-400 font-medium mt-0.5">vs {compareValue}</p>
-          )}
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <p className={`text-[9px] lg:text-[10px] font-bold uppercase ${color}`}>{sub}</p>
-            {pct !== null && (
-              <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg ${diff! >= 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
-                {diff! >= 0 ? "+" : ""}{pct}%
-              </span>
-            )}
-          </div>
-        </div>
-        <div className={`p-2.5 lg:p-3 rounded-xl lg:rounded-2xl ${bg} ${color} flex-shrink-0`}>{icon}</div>
-      </div>
     </div>
   );
 }

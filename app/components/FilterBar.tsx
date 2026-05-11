@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Filter, X } from "lucide-react";
+import { X } from "lucide-react";
 
 const MONTHS = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -33,7 +33,7 @@ interface Props {
   onReset: () => void;
   onCompare?: (values: CompareValues) => void;
   onCompareReset?: () => void;
-  showCompare?: boolean; // ← prop baru, default true
+  showCompare?: boolean;
 }
 
 function subtractDays(date: Date, days: number) {
@@ -51,7 +51,6 @@ export default function FilterBar({ onFilter, onReset, onCompare, onCompareReset
   const years = Array.from({ length: 3 }, (_, i) => currentYear - i);
   const today = formatDate(new Date());
 
-  // Filter state
   const [activeTab, setActiveTab] = useState<"filter" | "compare">("filter");
   const [filterType, setFilterType] = useState<"month" | "range">("month");
   const [month, setMonth] = useState(new Date().getMonth());
@@ -60,7 +59,6 @@ export default function FilterBar({ onFilter, onReset, onCompare, onCompareReset
   const [to, setTo] = useState("");
   const [filterActive, setFilterActive] = useState(false);
 
-  // Compare state
   const [comparePreset, setComparePreset] = useState<number | "custom" | null>(null);
   const [customA, setCustomA] = useState({ from: "", to: "" });
   const [customB, setCustomB] = useState({ from: "", to: "" });
@@ -87,7 +85,6 @@ export default function FilterBar({ onFilter, onReset, onCompare, onCompareReset
   const handleCompareApply = () => {
     let periodA = { from: "", to: "" };
     let periodB = { from: "", to: "" };
-
     if (comparePreset === "custom") {
       periodA = customA;
       periodB = customB;
@@ -96,7 +93,6 @@ export default function FilterBar({ onFilter, onReset, onCompare, onCompareReset
       periodA = { from: subtractDays(new Date(), days), to: today };
       periodB = { from: subtractDays(new Date(), days * 2), to: subtractDays(new Date(), days + 1) };
     } else return;
-
     setCompareActive(true);
     onCompare?.({ periodA, periodB });
   };
@@ -109,165 +105,186 @@ export default function FilterBar({ onFilter, onReset, onCompare, onCompareReset
     onCompareReset?.();
   };
 
+  const selectClass = "h-8 border border-gray-200 bg-white px-2.5 text-[13px] text-gray-700 font-medium focus:outline-none focus:border-gray-400 rounded-md transition-colors appearance-none cursor-pointer pr-7";
+  const dateClass = "h-8 border border-gray-200 bg-white px-2.5 text-[13px] text-gray-700 font-medium focus:outline-none focus:border-gray-400 rounded-md transition-colors";
+
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      {/* Tab Header — tab Compare hanya muncul jika showCompare=true */}
-      <div className="flex border-b border-gray-100">
+    <div className="bg-white border border-gray-200 rounded-lg">
+      {/* Tabs */}
+      <div className="flex items-center border-b border-gray-100 px-4">
         <button
           onClick={() => setActiveTab("filter")}
-          className={`px-5 py-3 text-xs font-bold transition-colors ${activeTab === "filter" ? "text-indigo-600 border-b-2 border-indigo-600" : "text-gray-400 hover:text-gray-600"}`}
+          className={`py-3 text-[12px] font-semibold mr-5 border-b-2 transition-colors ${
+            activeTab === "filter"
+              ? "text-gray-900 border-gray-900"
+              : "text-gray-400 border-transparent hover:text-gray-600"
+          }`}
         >
           Filter
+          {filterActive && <span className="ml-1.5 inline-block w-1 h-1 rounded-full bg-blue-500 align-middle" />}
         </button>
 
         {showCompare && (
           <button
             onClick={() => setActiveTab("compare")}
-            className={`px-5 py-3 text-xs font-bold transition-colors ${activeTab === "compare" ? "text-indigo-600 border-b-2 border-indigo-600" : "text-gray-400 hover:text-gray-600"}`}
+            className={`py-3 text-[12px] font-semibold border-b-2 transition-colors ${
+              activeTab === "compare"
+                ? "text-gray-900 border-gray-900"
+                : "text-gray-400 border-transparent hover:text-gray-600"
+            }`}
           >
             Compare
-            {compareActive && <span className="ml-2 w-2 h-2 bg-indigo-500 rounded-full inline-block" />}
+            {compareActive && <span className="ml-1.5 inline-block w-1 h-1 rounded-full bg-blue-500 align-middle" />}
           </button>
         )}
       </div>
 
-      <div className="p-4">
-        {/* FILTER TAB */}
+      <div className="px-4 py-3">
+        {/* ── FILTER TAB ── */}
         {activeTab === "filter" && (
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex rounded-xl border border-gray-200 overflow-hidden text-xs font-bold">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Type toggle */}
+            <div className="flex items-center gap-0 border border-gray-200 rounded-md overflow-hidden text-[12px] font-semibold">
               <button
                 onClick={() => setFilterType("month")}
-                className={`px-4 py-2 transition-colors ${filterType === "month" ? "bg-indigo-600 text-white" : "text-gray-500 hover:bg-gray-50"}`}
+                className={`px-3 h-8 transition-colors ${
+                  filterType === "month" ? "bg-gray-900 text-white" : "text-gray-500 hover:bg-gray-50"
+                }`}
               >
                 Per Bulan
               </button>
               <button
                 onClick={() => setFilterType("range")}
-                className={`px-4 py-2 transition-colors ${filterType === "range" ? "bg-indigo-600 text-white" : "text-gray-500 hover:bg-gray-50"}`}
+                className={`px-3 h-8 border-l border-gray-200 transition-colors ${
+                  filterType === "range" ? "bg-gray-900 text-white" : "text-gray-500 hover:bg-gray-50"
+                }`}
               >
-                Range Tanggal
+                Range
               </button>
             </div>
 
+            {/* Divider */}
+            <div className="w-px h-5 bg-gray-200" />
+
             {filterType === "month" && (
               <>
-                <div className="flex flex-col gap-1">
-                  <select value={month} onChange={e => setMonth(Number(e.target.value))}
-                    className="border border-gray-200 rounded-xl px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                <div className="relative">
+                  <select value={month} onChange={e => setMonth(Number(e.target.value))} className={selectClass}>
                     {MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
                   </select>
+                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]">▾</span>
                 </div>
-                <div className="flex flex-col gap-1">
-                  <select value={year} onChange={e => setYear(Number(e.target.value))}
-                    className="border border-gray-200 rounded-xl px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                <div className="relative">
+                  <select value={year} onChange={e => setYear(Number(e.target.value))} className={selectClass}>
                     {years.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
+                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]">▾</span>
                 </div>
               </>
             )}
 
             {filterType === "range" && (
               <>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">Dari</label>
-                  <input type="date" value={from} onChange={e => setFrom(e.target.value)}
-                    className="border border-gray-200 rounded-xl px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-gray-400 font-medium">Dari</span>
+                  <input type="date" value={from} onChange={e => setFrom(e.target.value)} className={dateClass} />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">Sampai</label>
-                  <input type="date" value={to} onChange={e => setTo(e.target.value)}
-                    className="border border-gray-200 rounded-xl px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-gray-400 font-medium">Sampai</span>
+                  <input type="date" value={to} onChange={e => setTo(e.target.value)} className={dateClass} />
                 </div>
               </>
             )}
 
-            <button onClick={handleFilterApply}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-colors">
-              <Filter size={14} /> Terapkan
+            <button
+              onClick={handleFilterApply}
+              className="h-8 px-4 bg-gray-900 text-white text-[12px] font-semibold rounded-md hover:bg-gray-700 transition-colors"
+            >
+              Terapkan
             </button>
 
             {filterActive && (
-              <button onClick={handleFilterReset}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 text-xs font-bold rounded-xl hover:bg-gray-200 transition-colors">
-                <X size={14} /> Reset
+              <button
+                onClick={handleFilterReset}
+                className="h-8 flex items-center gap-1.5 px-3 text-[12px] font-medium text-gray-400 hover:text-gray-700 transition-colors"
+              >
+                <X size={12} /> Reset
               </button>
             )}
           </div>
         )}
 
-        {/* COMPARE TAB — hanya render jika showCompare=true */}
+        {/* ── COMPARE TAB ── */}
         {showCompare && activeTab === "compare" && (
-          <div className="space-y-4">
-            <div className="space-y-2">
+          <div className="space-y-3">
+            {/* Preset chips */}
+            <div className="flex flex-wrap gap-2">
               {PRESETS.map((preset) => (
-                <label key={preset.days} className="flex items-center gap-3 cursor-pointer group">
-                  <input type="radio" name="compare" value={preset.days}
-                    checked={comparePreset === preset.days}
-                    onChange={() => setComparePreset(preset.days)}
-                    className="accent-indigo-600 w-4 h-4" />
-                  <span className="text-sm text-gray-600 group-hover:text-gray-800 font-medium">
-                    {preset.label} vs periode sebelumnya
-                  </span>
-                </label>
+                <button
+                  key={preset.days}
+                  onClick={() => setComparePreset(preset.days)}
+                  className={`h-8 px-3.5 rounded-md text-[12px] font-medium border transition-all ${
+                    comparePreset === preset.days
+                      ? "bg-gray-900 text-white border-gray-900"
+                      : "border-gray-200 text-gray-600 hover:border-gray-400 hover:bg-gray-50"
+                  }`}
+                >
+                  {preset.label}
+                </button>
               ))}
-              <label className="flex items-center gap-3 cursor-pointer group">
-                <input type="radio" name="compare" value="custom"
-                  checked={comparePreset === "custom"}
-                  onChange={() => setComparePreset("custom")}
-                  className="accent-indigo-600 w-4 h-4" />
-                <span className="text-sm text-gray-600 group-hover:text-gray-800 font-medium">Custom</span>
-              </label>
+              <button
+                onClick={() => setComparePreset("custom")}
+                className={`h-8 px-3.5 rounded-md text-[12px] font-medium border transition-all ${
+                  comparePreset === "custom"
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "border-gray-200 text-gray-500 hover:border-gray-400 hover:bg-gray-50"
+                }`}
+              >
+                Custom
+              </button>
             </div>
 
+            {/* Custom date picker */}
             {comparePreset === "custom" && (
-              <div className="space-y-3 pl-7">
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">Periode A — Dari</label>
-                    <input type="date" value={customA.from} onChange={e => setCustomA(p => ({ ...p, from: e.target.value }))}
-                      className="border border-gray-200 rounded-xl px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">Periode A — Sampai</label>
-                    <input type="date" value={customA.to} onChange={e => setCustomA(p => ({ ...p, to: e.target.value }))}
-                      className="border border-gray-200 rounded-xl px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-                  </div>
+              <div className="flex flex-wrap items-center gap-4 pt-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider w-16">Periode A</span>
+                  <input type="date" value={customA.from} onChange={e => setCustomA(p => ({ ...p, from: e.target.value }))} className={dateClass} />
+                  <span className="text-[11px] text-gray-300">–</span>
+                  <input type="date" value={customA.to} onChange={e => setCustomA(p => ({ ...p, to: e.target.value }))} className={dateClass} />
                 </div>
-                <p className="text-xs text-gray-400 font-bold">vs.</p>
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">Periode B — Dari</label>
-                    <input type="date" value={customB.from} onChange={e => setCustomB(p => ({ ...p, from: e.target.value }))}
-                      className="border border-gray-200 rounded-xl px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">Periode B — Sampai</label>
-                    <input type="date" value={customB.to} onChange={e => setCustomB(p => ({ ...p, to: e.target.value }))}
-                      className="border border-gray-200 rounded-xl px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-                  </div>
+                <span className="text-[11px] font-bold text-gray-300">vs</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider w-16">Periode B</span>
+                  <input type="date" value={customB.from} onChange={e => setCustomB(p => ({ ...p, from: e.target.value }))} className={dateClass} />
+                  <span className="text-[11px] text-gray-300">–</span>
+                  <input type="date" value={customB.to} onChange={e => setCustomB(p => ({ ...p, to: e.target.value }))} className={dateClass} />
                 </div>
               </div>
             )}
 
-            <div className="flex gap-3">
-              <button onClick={handleCompareApply} disabled={comparePreset === null}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                <Filter size={14} /> Terapkan Compare
+            <div className="flex items-center gap-2 pt-0.5">
+              <button
+                onClick={handleCompareApply}
+                disabled={comparePreset === null}
+                className="h-8 px-4 bg-gray-900 text-white text-[12px] font-semibold rounded-md hover:bg-gray-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                Terapkan Compare
               </button>
               {compareActive && (
-                <button onClick={handleCompareReset}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 text-xs font-bold rounded-xl hover:bg-gray-200 transition-colors">
-                  <X size={14} /> Reset
+                <button
+                  onClick={handleCompareReset}
+                  className="h-8 flex items-center gap-1.5 px-3 text-[12px] font-medium text-gray-400 hover:text-gray-700 transition-colors"
+                >
+                  <X size={12} /> Reset
                 </button>
               )}
+              {compareActive && (
+                <span className="text-[11px] text-blue-500 font-medium">
+                  ● Membandingkan 2 periode
+                </span>
+              )}
             </div>
-
-            {compareActive && (
-              <p className="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-3 py-2 rounded-xl inline-block">
-                Mode Compare aktif — grafik menampilkan 2 periode
-              </p>
-            )}
           </div>
         )}
       </div>

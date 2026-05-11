@@ -1,15 +1,10 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { Loader2, CheckCircle2 } from 'lucide-react';
+import { Loader2, CheckCircle2, ChevronRight, FileText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-
-
 export default function InputManualPage() {
-
-  useEffect(() => {
-    document.title = 'Input Data'
-  }, []);
+  useEffect(() => { document.title = 'Input Data'; }, []);
 
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -47,11 +42,11 @@ export default function InputManualPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData, 
+          ...formData,
           webMasuk: Number(formData.webMasuk),
           orderWaOts: Number(formData.orderWaOts),
           orderWeb: Number(formData.orderWeb),
-          userId: Number(currentUserId) 
+          userId: Number(currentUserId)
         }),
       });
 
@@ -69,76 +64,131 @@ export default function InputManualPage() {
     }
   };
 
+  const inputClass = "w-full bg-gray-50 border border-gray-200 text-sm text-gray-900 px-4 py-3 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:bg-white placeholder-gray-400 transition-colors";
+  const labelClass = "block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2";
+
+  // Hitung total order secara live
+  const totalOrder = Number(formData.orderWaOts) + Number(formData.orderWeb);
+  const cr = Number(formData.webMasuk) > 0
+    ? ((totalOrder / Number(formData.webMasuk)) * 100).toFixed(1)
+    : '0.0';
+
   return (
-    <div className="min-h-screen bg-[#F8F9FC] flex items-center justify-center p-4 lg:p-8">
-      <div className="w-full max-w-[450px]">
-        {/* Card dengan radius yang menyesuaikan (lebih kecil di mobile) */}
-        <div className="bg-white rounded-3xl lg:rounded-[40px] shadow-2xl shadow-indigo-100/50 border border-gray-100 p-6 lg:p-10">
-          <div className="text-center mb-8 lg:mb-10">
-            <h1 className="text-xl lg:text-2xl font-bold text-gray-800">Laporan Harian</h1>
-            <p className="text-gray-400 text-xs lg:text-sm mt-1">Input data leads & konversi harian</p>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div>
+        <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
+          <span>Dashboard</span>
+          <ChevronRight size={12} />
+          <span className="text-gray-600">Input Data</span>
+        </div>
+        <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Laporan Harian</h1>
+        <p className="text-xs text-gray-400 mt-0.5">Input data leads & konversi harian</p>
+      </div>
+
+      <div className="max-w-2xl mx-auto">
+        <form onSubmit={handleSubmit} className="bg-white border border-gray-200 divide-y divide-gray-100">
+
+          {/* Form header */}
+          <div className="px-8 py-5 flex items-center gap-3">
+            <div className="p-2 bg-gray-900 rounded text-white">
+              <FileText size={16} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-800">Form Input Harian</p>
+              <p className="text-xs text-gray-400">Isi semua field dengan data hari ini</p>
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5 lg:y-6">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Pilih Tanggal</label>
-              <input 
-                type="date" 
+          {/* Fields */}
+          <div className="px-8 py-6 space-y-5">
+            {/* Tanggal — full width */}
+            <div>
+              <label className={labelClass}>Pilih Tanggal</label>
+              <input
+                type="date"
                 required
-                className="w-full bg-gray-50 border-none rounded-xl lg:rounded-2xl p-3.5 lg:p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                value={formData.tanggal.split('T')[0]} 
+                className={inputClass}
+                value={formData.tanggal.split('T')[0]}
                 onChange={handleDateChange}
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Web Masuk</label>
-              <input 
-                type="number" 
+            {/* Web Masuk — full width */}
+            <div>
+              <label className={labelClass}>Web Masuk</label>
+              <input
+                type="number"
                 required
                 placeholder="0"
-                className="w-full bg-gray-50 border-none rounded-xl lg:rounded-2xl p-3.5 lg:p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                className={inputClass}
                 value={formData.webMasuk}
-                onChange={(e) => setFormData({...formData, webMasuk: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, webMasuk: e.target.value })}
               />
             </div>
 
-            {/* Grid berubah jadi 1 kolom di HP kecil banget, tapi 2 kolom di HP standar (sm) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Order WA / OTS</label>
-                <input 
-                  type="number" 
+            {/* Order grid — 2 kolom */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelClass}>Order WA / OTS</label>
+                <input
+                  type="number"
                   required
                   placeholder="0"
-                  className="w-full bg-gray-50 border-none rounded-xl lg:rounded-2xl p-3.5 lg:p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className={inputClass}
                   value={formData.orderWaOts}
-                  onChange={(e) => setFormData({...formData, orderWaOts: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, orderWaOts: e.target.value })}
                 />
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Order Web</label>
-                <input 
-                  type="number" 
+              <div>
+                <label className={labelClass}>Order Web</label>
+                <input
+                  type="number"
                   required
                   placeholder="0"
-                  className="w-full bg-gray-50 border-none rounded-xl lg:rounded-2xl p-3.5 lg:p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className={inputClass}
                   value={formData.orderWeb}
-                  onChange={(e) => setFormData({...formData, orderWeb: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, orderWeb: e.target.value })}
                 />
               </div>
             </div>
+          </div>
 
-            <button 
-              disabled={loading}
-              type="submit" 
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 lg:py-4 rounded-xl lg:rounded-2xl shadow-lg shadow-indigo-100 flex items-center justify-center gap-3 transition-all disabled:opacity-50 active:scale-95 text-sm lg:text-base"
+          {/* Live summary */}
+          <div className="px-8 py-5 bg-gray-50 grid grid-cols-3 divide-x divide-gray-200">
+            <div className="pr-6">
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Web Masuk</p>
+              <p className="text-xl font-semibold text-gray-800 tabular-nums">{Number(formData.webMasuk).toLocaleString()}</p>
+            </div>
+            <div className="px-6">
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Total Order</p>
+              <p className="text-xl font-semibold text-gray-800 tabular-nums">{totalOrder.toLocaleString()}</p>
+            </div>
+            <div className="pl-6">
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">CR Hari Ini</p>
+              <p className={`text-xl font-semibold tabular-nums ${Number(cr) > 15 ? 'text-emerald-600' : 'text-amber-500'}`}>{cr}%</p>
+            </div>
+          </div>
+
+          {/* Footer actions */}
+          <div className="px-8 py-4 flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2 transition-colors"
             >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : <CheckCircle2 size={20} />}
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex items-center gap-2 bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-6 py-2.5 rounded transition-colors disabled:opacity-50"
+            >
+              {loading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
               {loading ? 'Menyimpan...' : 'Simpan Laporan'}
             </button>
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
     </div>
   );

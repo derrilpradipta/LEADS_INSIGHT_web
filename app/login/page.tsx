@@ -1,6 +1,5 @@
 "use client";
-
-import React, {useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -9,14 +8,12 @@ export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  useEffect(() => {
-        document.title = 'Login'
-      }, 
-    []);
-  // Ini adalah fungsi LOGIN, bukan register
+  useEffect(() => { document.title = 'Login'; }, []);
+
+  // Fungsi LOGIN — bukan register
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const res = await fetch('/api/login', {
         method: 'POST',
@@ -26,16 +23,14 @@ export default function LoginPage() {
 
       if (res.ok) {
         const data = await res.json();
-        
+
         // Simpan semua informasi penting ke localStorage
         localStorage.setItem('user_id', data.user.id);
         localStorage.setItem('user_name', data.user.nama);
         localStorage.setItem('user_role', data.user.role);
         localStorage.setItem('user_username', data.user.username);
-        // localStorage.setItem('user_username', username); // Opsional untuk halaman profil
 
-        // Jika login sukses, langsung ke dashboard
-        router.push('/dashboard'); 
+        router.push('/dashboard');
       } else {
         const errorData = await res.json();
         alert(errorData.message || "Username atau password salah.");
@@ -46,56 +41,61 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F8F9FC] p-4 font-sans text-[#1A1C21]">
-      <div className="w-full max-w-md space-y-8 rounded-2xl bg-white p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100">
-        
-        <div className="text-center">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#4F46E5] text-white font-bold text-2xl mb-4 shadow-lg shadow-indigo-200">
+    <div className="flex min-h-screen items-center justify-center bg-[#F7F8FA] p-4">
+      <div className="w-full max-w-sm">
+        {/* Brand */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-11 h-11 bg-gray-900 text-white font-bold text-xl mb-4 rounded">
             L
           </div>
-          <h2 className="text-2xl font-bold tracking-tight text-[#111827]">LeadTrack</h2>
-          <p className="mt-2 text-sm text-gray-500">Monitoring & Analisa Konversi</p>
+          <h2 className="text-xl font-semibold tracking-tight text-gray-900">LeadTrack</h2>
+          <p className="mt-1 text-sm text-gray-400">Monitoring & Analisa Konversi</p>
         </div>
-        
-        <form className="mt-8 space-y-5" onSubmit={handleLogin}>
-          <div className="space-y-4">
+
+        {/* Card */}
+        <div className="bg-white border border-gray-200">
+          <form className="p-6 space-y-4" onSubmit={handleLogin}>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1 ml-1">Username Pegawai</label>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                Username Pegawai
+              </label>
               <input
                 type="text"
                 required
-                className="block w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm transition-all focus:border-[#4F46E5] focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-50"
                 placeholder="Masukkan username"
+                className="w-full border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none rounded transition-colors"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1 ml-1">Password</label>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                Password
+              </label>
               <input
                 type="password"
                 required
-                className="block w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm transition-all focus:border-[#4F46E5] focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-50"
                 placeholder="••••••••"
+                className="w-full border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none rounded transition-colors"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-          </div>
 
-          <div className="flex flex-col items-center pt-2">
             <button
               type="submit"
-              className="w-full rounded-xl bg-[#4F46E5] py-3 text-sm font-semibold text-white shadow-md shadow-indigo-100 transition-all hover:bg-[#4338CA] active:scale-[0.98]"
+              className="w-full bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium py-2.5 transition-colors active:scale-[0.98] rounded mt-2"
             >
               Masuk ke Dashboard
             </button>
-            
-            <Link href="/register" className="mt-6 text-xs font-medium text-gray-400 hover:text-[#4F46E5] transition-colors">
-              Belum punya akun? <span className="underline">Daftar pegawai baru</span>
-            </Link>
-          </div>
-        </form>
+          </form>
+        </div>
+
+        <div className="text-center mt-5">
+          <Link href="/register" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+            Belum punya akun? <span className="underline">Daftar pegawai baru</span>
+          </Link>
+        </div>
       </div>
     </div>
   );

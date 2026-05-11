@@ -3,9 +3,6 @@ import { prisma } from "@/app/lib/prisma";
 import { cookies } from "next/headers";
 
 export async function POST(request: Request) {
-  console.log("=== LOGIN DIPANGGIL ===");
-  console.log("PRISMA INSTANCE:", prisma);  // tambah ini
-  
   const { username, password } = await request.json();
 
   try {
