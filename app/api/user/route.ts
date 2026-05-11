@@ -25,7 +25,7 @@ export async function GET() {
     });
 
     // Format data agar 'lastInput' mudah dibaca oleh Frontend
-    const formattedUsers = users.map(user => ({
+    const formattedUsers = users.map((user: any) => ({
       id: user.id,
       nama: user.nama,
       username: user.username,
