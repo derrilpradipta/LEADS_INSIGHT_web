@@ -18,16 +18,16 @@ export async function GET(request: Request) {
       include: { leads: true },
     });
 
-    const formattedData = staffMembers.map((staff) => {
-      const allLeads = staff.leads || [];
-      const monthlyLeads = allLeads.filter(l => {
+    const formattedData = staffMembers.map((staff: any) => {
+      const allLeads: any[] = staff.leads || [];
+      const monthlyLeads = allLeads.filter((l: any) => {
         const d = new Date(l.tanggal);
         return d >= firstDay && d <= lastDay;
       });
 
-      const totalWebMonth = monthlyLeads.reduce((acc, curr) => acc + (curr.orderWeb || 0), 0);
-      const totalWAMonth = monthlyLeads.reduce((acc, curr) => acc + (curr.orderWaOts || 0), 0);
-      const totalLeadsMonth = monthlyLeads.reduce((acc, curr) => acc + (curr.webMasuk || 0), 0);
+      const totalWebMonth = monthlyLeads.reduce((acc: number, curr: any) => acc + (curr.orderWeb || 0), 0);
+      const totalWAMonth = monthlyLeads.reduce((acc: number, curr: any) => acc + (curr.orderWaOts || 0), 0);
+      const totalLeadsMonth = monthlyLeads.reduce((acc: number, curr: any) => acc + (curr.webMasuk || 0), 0);
 
       return {
         id: staff.id,
