@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Loader2, ArrowUp, ArrowDown, Minus, Globe, TrendingUp, ShoppingCart, MessageCircle } from 'lucide-react';
+import { Loader2, ArrowUp, ArrowDown, Minus, Globe, TrendingUp, ShoppingCart, MessageCircle, Package } from 'lucide-react';
 import {
   ComposedChart, Line, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell,
@@ -162,6 +162,15 @@ export default function DashboardPage() {
       accentBg: "#fffbeb",
       accentText: "text-amber-600",
     },
+    { label: "Total Order",
+      value: totalOrders,
+      sub: "Order Web + WA/OTS",
+      icon: Package,
+      compareVal: compareData?.periodB.totalOrder,
+      accent: "#0891b2",
+      accentBg: "#ecfeff",
+      accentText: "text-cyan-600",
+    },
   ];
 
   return (
@@ -186,7 +195,7 @@ export default function DashboardPage() {
       />
 
       {/* ── METRICS — 4 kartu terpisah dengan accent kiri ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {metrics.map((m, i) => {
           const Icon = m.icon;
           const numVal = typeof m.value === 'string' ? parseFloat(m.value) : m.value;
