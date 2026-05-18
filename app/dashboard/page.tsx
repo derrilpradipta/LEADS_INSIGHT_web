@@ -455,44 +455,131 @@ export default function DashboardPage() {
             <h3 className="text-[14px] font-bold text-gray-800 mt-0.5">Daily Performance Monitoring</h3>
           </div>
           <span className="text-[11px] font-semibold text-gray-400 bg-gray-50 border border-gray-200 px-3 py-1 rounded">
-            {normalChartData.length} hari tercatat
+            {compareData
+              ? `${Math.max(groupedA.length, groupedB.length)} hari tercatat`
+              : `${normalChartData.length} hari tercatat`}
           </span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px]">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/60">
-                <th className="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Tanggal</th>
-                <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Web Masuk</th>
-                <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order Web</th>
-                <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order WA/OTS</th>
-                <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total</th>
-                <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">CR</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={6} className="text-center py-14 text-gray-400 text-sm">
-                  <Loader2 className="animate-spin inline mr-2" size={15} /> Memuat data...
-                </td></tr>
-              ) : normalChartData.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-14 text-gray-400 text-sm">Tidak ada data.</td></tr>
-              ) : [...normalChartData].reverse().map((item, index) => (
-                <tr key={index} className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors">
-                  <td className="px-5 py-3.5 text-[13px] font-semibold text-gray-700">{item.tanggal}</td>
-                  <td className="px-5 py-3.5 text-[13px] text-right text-gray-600 tabular-nums">{item.webMasuk}</td>
-                  <td className="px-5 py-3.5 text-[13px] text-right text-gray-600 tabular-nums">{item.orderWeb}</td>
-                  <td className="px-5 py-3.5 text-[13px] text-right text-gray-600 tabular-nums">{item.orderWaOts}</td>
-                  <td className="px-5 py-3.5 text-[13px] text-right font-bold text-gray-900 tabular-nums">{item.orderWeb + item.orderWaOts}</td>
-                  <td className="px-5 py-3.5 text-right">
-                    <span className={`text-[12px] font-bold ${item.cr > 15 ? 'text-blue-600' : 'text-gray-400'}`}>
-                      {item.cr.toFixed(1)}%
-                    </span>
-                  </td>
+          {!compareData ? (
+            /* ── MODE NORMAL ── */
+            <table className="w-full min-w-[640px]">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50/60">
+                  <th className="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Tanggal</th>
+                  <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Web Masuk</th>
+                  <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order Web</th>
+                  <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order WA/OTS</th>
+                  <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total</th>
+                  <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">CR</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={6} className="text-center py-14 text-gray-400 text-sm">
+                    <Loader2 className="animate-spin inline mr-2" size={15} /> Memuat data...
+                  </td></tr>
+                ) : normalChartData.length === 0 ? (
+                  <tr><td colSpan={6} className="text-center py-14 text-gray-400 text-sm">Tidak ada data.</td></tr>
+                ) : [...normalChartData].reverse().map((item, index) => (
+                  <tr key={index} className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors">
+                    <td className="px-5 py-3.5 text-[13px] font-semibold text-gray-700">{item.tanggal}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-right text-gray-600 tabular-nums">{item.webMasuk}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-right text-gray-600 tabular-nums">{item.orderWeb}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-right text-gray-600 tabular-nums">{item.orderWaOts}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-right font-bold text-gray-900 tabular-nums">{item.orderWeb + item.orderWaOts}</td>
+                    <td className="px-5 py-3.5 text-right">
+                      <span className={`text-[12px] font-bold ${item.cr > 15 ? 'text-blue-600' : 'text-gray-400'}`}>
+                        {item.cr.toFixed(1)}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            /* ── MODE COMPARE: atas-bawah per hari ── */
+            <table className="w-full min-w-[640px]">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50/60">
+                  <th className="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Hari</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Tanggal</th>
+                  <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Web Masuk</th>
+                  <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order Web</th>
+                  <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order WA/OTS</th>
+                  <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total</th>
+                  <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">CR</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: Math.max(groupedA.length, groupedB.length) }, (_, i) => {
+                  const a = groupedA[i];
+                  const b = groupedB[i];
+                  const crA = a && a.webMasuk > 0 ? ((a.orderWeb + a.orderWaOts) / a.webMasuk) * 100 : null;
+                  const crB = b && b.webMasuk > 0 ? ((b.orderWeb + b.orderWaOts) / b.webMasuk) * 100 : null;
+                  const totalA = a ? a.orderWeb + a.orderWaOts : null;
+                  const totalB = b ? b.orderWeb + b.orderWaOts : null;
+                  const diff = totalA !== null && totalB !== null ? totalA - totalB : null;
+
+                  return (
+                    <React.Fragment key={i}>
+                      {/* Baris Periode A */}
+                      <tr className="border-b border-gray-50 bg-blue-50/20 hover:bg-blue-50/40 transition-colors">
+                        <td className="px-5 py-2.5" rowSpan={2}>
+                          <span className="text-[11px] font-bold text-gray-400">{i + 1}</span>
+                        </td>
+                        <td className="px-5 py-2.5">
+                          <div className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+                            <span className="text-[13px] font-semibold text-gray-700">{a?.tanggal ?? '-'}</span>
+                            <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider ml-1">A</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-2.5 text-[13px] text-right text-gray-600 tabular-nums">{a?.webMasuk ?? '-'}</td>
+                        <td className="px-5 py-2.5 text-[13px] text-right text-gray-600 tabular-nums">{a?.orderWeb ?? '-'}</td>
+                        <td className="px-5 py-2.5 text-[13px] text-right text-gray-600 tabular-nums">{a?.orderWaOts ?? '-'}</td>
+                        <td className="px-5 py-2.5 text-right">
+                          <span className="flex items-center justify-end gap-1.5 text-[13px] font-bold text-gray-900 tabular-nums">
+                            {totalA ?? '-'}
+                            {diff !== null && (
+                              <span className={`text-[10px] font-bold ${diff > 0 ? 'text-emerald-500' : diff < 0 ? 'text-red-400' : 'text-gray-300'}`}>
+                                {diff > 0 ? `+${diff}` : diff}
+                              </span>
+                            )}
+                          </span>
+                        </td>
+                        <td className="px-5 py-2.5 text-right">
+                          {crA !== null
+                            ? <span className={`text-[12px] font-bold ${crA > 15 ? 'text-blue-600' : 'text-gray-400'}`}>{crA.toFixed(1)}%</span>
+                            : <span className="text-gray-300 text-[12px]">-</span>}
+                        </td>
+                      </tr>
+
+                      {/* Baris Periode B */}
+                      <tr className="border-b border-gray-200 hover:bg-gray-50/40 transition-colors">
+                        <td className="px-5 py-2.5">
+                          <div className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0" />
+                            <span className="text-[13px] text-gray-400 tabular-nums">{b?.tanggal ?? '-'}</span>
+                            <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider ml-1">B</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-2.5 text-[13px] text-right text-gray-400 tabular-nums">{b?.webMasuk ?? '-'}</td>
+                        <td className="px-5 py-2.5 text-[13px] text-right text-gray-400 tabular-nums">{b?.orderWeb ?? '-'}</td>
+                        <td className="px-5 py-2.5 text-[13px] text-right text-gray-400 tabular-nums">{b?.orderWaOts ?? '-'}</td>
+                        <td className="px-5 py-2.5 text-[13px] text-right font-bold text-gray-500 tabular-nums">{totalB ?? '-'}</td>
+                        <td className="px-5 py-2.5 text-right">
+                          {crB !== null
+                            ? <span className={`text-[12px] font-bold ${crB > 15 ? 'text-blue-400' : 'text-gray-300'}`}>{crB.toFixed(1)}%</span>
+                            : <span className="text-gray-300 text-[12px]">-</span>}
+                        </td>
+                      </tr>
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
