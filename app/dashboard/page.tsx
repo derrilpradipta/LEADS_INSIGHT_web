@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Loader2, ArrowUp, ArrowDown, Minus, Globe, TrendingUp, ShoppingCart, MessageCircle, Package } from 'lucide-react';
+import { Loader2, ArrowUp, ArrowDown, Minus, Globe, TrendingUp, ShoppingCart, MessageCircle, Package, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   ComposedChart, Line, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell,
@@ -23,6 +23,8 @@ interface CompareData {
   labelB: string;
 }
 
+const ROWS_PER_PAGE = 7;
+
 function groupLeadsByDate(data: Lead[]) {
   const map: Record<string, { tanggal: string; name: string; webMasuk: number; orderWeb: number; orderWaOts: number }> = {};
   [...data].sort((a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime()).forEach((curr) => {
@@ -40,6 +42,9 @@ export default function DashboardPage() {
   const [compareLeads, setCompareLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [compareData, setCompareData] = useState<CompareData | null>(null);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     document.title = 'Dashboard | LeadTrack';
@@ -162,7 +167,8 @@ export default function DashboardPage() {
       accentBg: "#fffbeb",
       accentText: "text-amber-600",
     },
-    { label: "Total Order",
+    {
+      label: "Total Order",
       value: totalOrders,
       sub: "Order Web + WA/OTS",
       icon: Package,
@@ -172,6 +178,23 @@ export default function DashboardPage() {
       accentText: "text-cyan-600",
     },
   ];
+
+  // ── Pagination logic ──
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [normalChartData.length, compareData]);
+
+  const reversedNormalData = [...normalChartData].reverse();
+  const totalPagesNormal = Math.max(1, Math.ceil(reversedNormalData.length / ROWS_PER_PAGE));
+  const paginatedNormalData = reversedNormalData.slice(
+    (currentPage - 1) * ROWS_PER_PAGE,
+    currentPage * ROWS_PER_PAGE
+  );
+
+  const compareRowCount = Math.max(groupedA.length, groupedB.length);
+  const totalPagesCompare = Math.max(1, Math.ceil(compareRowCount / ROWS_PER_PAGE));
+  const compareStartIdx = (currentPage - 1) * ROWS_PER_PAGE;
+  const compareEndIdx = Math.min(currentPage * ROWS_PER_PAGE, compareRowCount);
 
   return (
     <div className="space-y-5">
@@ -194,7 +217,7 @@ export default function DashboardPage() {
         onCompareReset={handleCompareReset}
       />
 
-      {/* ── METRICS — 4 kartu terpisah dengan accent kiri ── */}
+      {/* ── METRICS — 5 kartu terpisah dengan accent kiri ── */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {metrics.map((m, i) => {
           const Icon = m.icon;
@@ -205,22 +228,15 @@ export default function DashboardPage() {
 
           return (
             <div key={i} className="bg-white border border-gray-200 rounded-lg overflow-hidden flex">
-              {/* Accent bar kiri */}
               <div className="w-1 flex-shrink-0" style={{ background: m.accent }} />
-
               <div className="flex-1 px-5 pt-3 pb-4.5 flex flex-col justify-between">
-                {/* Baris atas: label + icon */}
                 <div className="flex items-center justify-between">
                   <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">{m.label}</p>
                   <div className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0" style={{ background: m.accentBg }}>
                     <Icon size={14} style={{ color: m.accent }} />
                   </div>
                 </div>
-
-                {/* Baris tengah: angka utama */}
                 <p className="text-[30px] font-bold text-gray-900 leading-none tabular-nums my-3">{m.value}</p>
-
-                {/* Baris bawah: sub label + compare */}
                 <div className="flex items-center justify-between">
                   <p className="text-[11px] text-gray-400">{m.sub}</p>
                   {pct !== null ? (
@@ -323,12 +339,10 @@ export default function DashboardPage() {
                       const idx = (label as number) - 1;
                       const tglA = groupedA[idx]?.name ?? '-';
                       const tglB = groupedB[idx]?.name ?? '-';
-                      // Pisahkan payload A dan B
                       const itemsA = payload.filter((e: any) => e.dataKey?.endsWith('A'));
                       const itemsB = payload.filter((e: any) => e.dataKey?.endsWith('B'));
                       return (
                         <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', padding: '10px 14px', minWidth: 200 }}>
-                          {/* Periode A */}
                           <p style={{ fontSize: 10, fontWeight: 700, color: '#3b82f6', marginBottom: 4 }}>{tglA}</p>
                           {itemsA.map((e: any, i: number) => (
                             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
@@ -337,9 +351,7 @@ export default function DashboardPage() {
                               <span style={{ fontSize: 12, fontWeight: 700, color: '#111827' }}>{e.value ?? '-'}</span>
                             </div>
                           ))}
-                          {/* Divider */}
                           <div style={{ borderTop: '1px solid #f1f5f9', margin: '6px 0' }} />
-                          {/* Periode B */}
                           <p style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', marginBottom: 4 }}>{tglB}</p>
                           {itemsB.map((e: any, i: number) => (
                             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
@@ -479,9 +491,9 @@ export default function DashboardPage() {
                   <tr><td colSpan={6} className="text-center py-14 text-gray-400 text-sm">
                     <Loader2 className="animate-spin inline mr-2" size={15} /> Memuat data...
                   </td></tr>
-                ) : normalChartData.length === 0 ? (
+                ) : paginatedNormalData.length === 0 ? (
                   <tr><td colSpan={6} className="text-center py-14 text-gray-400 text-sm">Tidak ada data.</td></tr>
-                ) : [...normalChartData].reverse().map((item, index) => (
+                ) : paginatedNormalData.map((item, index) => (
                   <tr key={index} className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors">
                     <td className="px-5 py-3.5 text-[13px] font-semibold text-gray-700">{item.tanggal}</td>
                     <td className="px-5 py-3.5 text-[13px] text-right text-gray-600 tabular-nums">{item.webMasuk}</td>
@@ -498,7 +510,7 @@ export default function DashboardPage() {
               </tbody>
             </table>
           ) : (
-            /* ── MODE COMPARE: atas-bawah per hari ── */
+            /* ── MODE COMPARE: atas-bawah per hari, dipaginasi ── */
             <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/60">
@@ -512,7 +524,8 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {Array.from({ length: Math.max(groupedA.length, groupedB.length) }, (_, i) => {
+                {Array.from({ length: compareEndIdx - compareStartIdx }, (_, j) => {
+                  const i = compareStartIdx + j;
                   const a = groupedA[i];
                   const b = groupedB[i];
                   const crA = a && a.webMasuk > 0 ? ((a.orderWeb + a.orderWaOts) / a.webMasuk) * 100 : null;
@@ -581,6 +594,39 @@ export default function DashboardPage() {
             </table>
           )}
         </div>
+
+        {/* ── PAGINATION FOOTER ── */}
+        {!loading && (
+          (!compareData && reversedNormalData.length > ROWS_PER_PAGE) ||
+          (compareData && compareRowCount > ROWS_PER_PAGE)
+        ) && (
+          <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 bg-gray-50/40">
+            <p className="text-[12px] text-gray-400">
+              {!compareData
+                ? `Menampilkan ${(currentPage - 1) * ROWS_PER_PAGE + 1}–${Math.min(currentPage * ROWS_PER_PAGE, reversedNormalData.length)} dari ${reversedNormalData.length} hari`
+                : `Menampilkan H${compareStartIdx + 1}–H${compareEndIdx} dari ${compareRowCount} hari`}
+            </p>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="h-7 w-7 flex items-center justify-center text-gray-500 border border-gray-200 rounded hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <span className="text-[12px] text-gray-500 font-medium px-2 tabular-nums">
+                {currentPage} / {!compareData ? totalPagesNormal : totalPagesCompare}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(!compareData ? totalPagesNormal : totalPagesCompare, p + 1))}
+                disabled={currentPage === (!compareData ? totalPagesNormal : totalPagesCompare)}
+                className="h-7 w-7 flex items-center justify-center text-gray-500 border border-gray-200 rounded hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
     </div>

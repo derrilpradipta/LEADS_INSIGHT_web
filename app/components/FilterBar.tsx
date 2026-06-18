@@ -65,6 +65,14 @@ export default function FilterBar({ onFilter, onReset, onCompare, onCompareReset
   const [compareActive, setCompareActive] = useState(false);
 
   const handleFilterApply = () => {
+    // Saling eksklusif — matikan compare kalau filter diaktifkan
+    if (compareActive) {
+      setCompareActive(false);
+      setComparePreset(null);
+      setCustomA({ from: "", to: "" });
+      setCustomB({ from: "", to: "" });
+      onCompareReset?.();
+    }
     setFilterActive(true);
     if (filterType === "month") {
       onFilter({ type: "month", month, year, from: "", to: "" });
@@ -93,6 +101,16 @@ export default function FilterBar({ onFilter, onReset, onCompare, onCompareReset
       periodA = { from: subtractDays(new Date(), days), to: today };
       periodB = { from: subtractDays(new Date(), days * 2), to: subtractDays(new Date(), days + 1) };
     } else return;
+
+    // Saling eksklusif — matikan filter kalau compare diaktifkan
+    if (filterActive) {
+      setFilterActive(false);
+      setMonth(new Date().getMonth());
+      setYear(currentYear);
+      setFrom("");
+      setTo("");
+    }
+
     setCompareActive(true);
     onCompare?.({ periodA, periodB });
   };
@@ -211,6 +229,12 @@ export default function FilterBar({ onFilter, onReset, onCompare, onCompareReset
                 <X size={12} /> Reset
               </button>
             )}
+
+            {compareActive && (
+              <span className="text-[11px] text-gray-300 italic">
+                Mengaktifkan filter akan menonaktifkan compare
+              </span>
+            )}
           </div>
         )}
 
@@ -282,6 +306,11 @@ export default function FilterBar({ onFilter, onReset, onCompare, onCompareReset
               {compareActive && (
                 <span className="text-[11px] text-blue-500 font-medium">
                   ● Membandingkan 2 periode
+                </span>
+              )}
+              {filterActive && (
+                <span className="text-[11px] text-gray-300 italic">
+                  Mengaktifkan compare akan menonaktifkan filter
                 </span>
               )}
             </div>
