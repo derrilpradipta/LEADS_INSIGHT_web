@@ -191,10 +191,19 @@ export default function DashboardPage() {
     currentPage * ROWS_PER_PAGE
   );
 
+  // Data untuk grafik Tren Harian & Closing Rate — ikut pagination yang sama dengan tabel.
+  // Dibalik lagi jadi ascending (kiri=lama, kanan=baru) karena chart butuh urutan kronologis.
+  const paginatedChartData = [...paginatedNormalData].reverse();
+
   const compareRowCount = Math.max(groupedA.length, groupedB.length);
   const totalPagesCompare = Math.max(1, Math.ceil(compareRowCount / ROWS_PER_PAGE));
   const compareStartIdx = (currentPage - 1) * ROWS_PER_PAGE;
   const compareEndIdx = Math.min(currentPage * ROWS_PER_PAGE, compareRowCount);
+
+  // Range tanggal yang sedang ditampilkan di halaman saat ini (mode normal)
+  const pageRangeLabel = paginatedChartData.length > 0
+    ? `${paginatedChartData[0]?.tanggal} – ${paginatedChartData[paginatedChartData.length - 1]?.tanggal}`
+    : '';
 
   return (
     <div className="space-y-5">
@@ -265,6 +274,11 @@ export default function DashboardPage() {
             <div>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tren Harian</p>
               <h3 className="text-[14px] font-bold text-gray-800 mt-0.5">Order Web & WA/OTS</h3>
+              {!compareData && totalPagesNormal > 1 && (
+                <p className="text-[11px] text-gray-400 mt-1">
+                  {pageRangeLabel} <span className="text-gray-300">· Hal {currentPage}/{totalPagesNormal}</span>
+                </p>
+              )}
             </div>
             <div className="flex gap-3 text-[11px] font-medium text-gray-500 flex-shrink-0">
               {!compareData ? (
@@ -297,7 +311,7 @@ export default function DashboardPage() {
           <div style={{ height: 260 }}>
             <ResponsiveContainer width="100%" height="100%">
               {!compareData ? (
-                <ComposedChart data={normalChartData} margin={{ left: -10, right: 4 }}>
+                <ComposedChart data={paginatedChartData} margin={{ left: -10, right: 4 }}>
                   <defs>
                     <linearGradient id="gWeb" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.12} />
@@ -380,6 +394,11 @@ export default function DashboardPage() {
             <div>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Closing Rate</p>
               <h3 className="text-[14px] font-bold text-gray-800 mt-0.5">Performa Harian (%)</h3>
+              {!compareData && totalPagesNormal > 1 && (
+                <p className="text-[11px] text-gray-400 mt-1">
+                  {pageRangeLabel} <span className="text-gray-300">· Hal {currentPage}/{totalPagesNormal}</span>
+                </p>
+              )}
             </div>
             {compareData && (
               <div className="flex gap-2.5 text-[11px] font-medium text-gray-500 flex-shrink-0">
@@ -397,7 +416,7 @@ export default function DashboardPage() {
           <div style={{ height: 260 }}>
             <ResponsiveContainer width="100%" height="100%">
               {!compareData ? (
-                <BarChart data={crChartData} margin={{ left: -10, right: 4 }} barCategoryGap="40%">
+                <BarChart data={paginatedChartData} margin={{ left: -10, right: 4 }} barCategoryGap="40%">
                   <CartesianGrid strokeDasharray="3 0" vertical={false} stroke="#f1f3f5" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 500 }} dy={6} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 500 }} width={24} />
@@ -407,7 +426,7 @@ export default function DashboardPage() {
                     formatter={(v: any) => [`${Number(v).toFixed(1)}%`, "CR"]}
                   />
                   <Bar dataKey="cr" radius={[3, 3, 0, 0]}>
-                    {crChartData.map((entry, index) => (
+                    {paginatedChartData.map((entry, index) => (
                       <Cell key={index} fill={entry.cr > 15 ? '#3b82f6' : '#e5e7eb'} />
                     ))}
                   </Bar>
