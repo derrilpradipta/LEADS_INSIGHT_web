@@ -42,6 +42,7 @@ export default function DashboardPage() {
   const [compareLeads, setCompareLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [compareData, setCompareData] = useState<CompareData | null>(null);
+  const [filterActive, setFilterActive] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -69,11 +70,18 @@ export default function DashboardPage() {
   };
 
   const handleFilter = (values: any) => {
+    setFilterActive(true);
     if (values.type === "month") loadData(`month=${values.month}&year=${values.year}`);
     else if (values.from && values.to) loadData(`from=${values.from}&to=${values.to}`);
   };
 
+  const handleFilterReset = () => {
+    setFilterActive(false);
+    loadData();
+  };
+
   const handleCompare = async (values: { periodA: { from: string; to: string }; periodB: { from: string; to: string } }) => {
+    setFilterActive(false);
     const rawUid = localStorage.getItem('user_id');
     const urole = localStorage.getItem('user_role');
     const uid = rawUid ? parseInt(rawUid, 10) : null;
@@ -101,7 +109,11 @@ export default function DashboardPage() {
     });
   };
 
-  const handleCompareReset = () => { setCompareData(null); setCompareLeads([]); loadData(); };
+  const handleCompareReset = () => {
+    setCompareData(null);
+    setCompareLeads([]);
+    loadData();
+  };
 
   const groupedA = groupLeadsByDate(leads);
   const groupedB = groupLeadsByDate(compareLeads);
@@ -116,13 +128,17 @@ export default function DashboardPage() {
     orderWebB: groupedB[i]?.orderWeb ?? null,
     orderWaOtsB: groupedB[i]?.orderWaOts ?? null,
   }));
-  const crChartData = groupedA.map(item => ({ name: item.name, cr: item.webMasuk > 0 ? ((item.orderWeb + item.orderWaOts) / item.webMasuk) * 100 : 0 }));
 
   const totalLeads = leads.reduce((acc, curr) => acc + curr.webMasuk, 0);
   const totalOrders = leads.reduce((acc, curr) => acc + (curr.orderWeb + curr.orderWaOts), 0);
   const totalOrderWeb = leads.reduce((a, b) => a + b.orderWeb, 0);
   const totalOrderWa = leads.reduce((a, b) => a + b.orderWaOts, 0);
   const avgCR = totalLeads > 0 ? ((totalOrders / totalLeads) * 100).toFixed(1) : "0";
+
+  // ── Avg Leads/Day ──
+  const showAvg = filterActive || !!compareData;
+  const avgLeadsPerDayA = groupedA.length > 0 ? (totalLeads / groupedA.length).toFixed(1) : "0";
+  const avgLeadsPerDayB = groupedB.length > 0 ? (compareData?.periodB.webMasuk ?? 0) / groupedB.length : null;
 
   const metrics = [
     {
@@ -134,6 +150,9 @@ export default function DashboardPage() {
       accent: "#2563eb",
       accentBg: "#eff6ff",
       accentText: "text-blue-600",
+      // avg ditampilkan di card ini saat filter/compare aktif
+      avgA: showAvg ? avgLeadsPerDayA : null,
+      avgB: showAvg && avgLeadsPerDayB !== null ? avgLeadsPerDayB.toFixed(1) : null,
     },
     {
       label: "Conversion Rate",
@@ -190,9 +209,6 @@ export default function DashboardPage() {
     (currentPage - 1) * ROWS_PER_PAGE,
     currentPage * ROWS_PER_PAGE
   );
-
-  // Data untuk grafik Tren Harian & Closing Rate — ikut pagination yang sama dengan tabel.
-  // Dibalik lagi jadi ascending (kiri=lama, kanan=baru) karena chart butuh urutan kronologis.
   const paginatedChartData = [...paginatedNormalData].reverse();
 
   const compareRowCount = Math.max(groupedA.length, groupedB.length);
@@ -200,7 +216,6 @@ export default function DashboardPage() {
   const compareStartIdx = (currentPage - 1) * ROWS_PER_PAGE;
   const compareEndIdx = Math.min(currentPage * ROWS_PER_PAGE, compareRowCount);
 
-  // Range tanggal yang sedang ditampilkan di halaman saat ini (mode normal)
   const pageRangeLabel = paginatedChartData.length > 0
     ? `${paginatedChartData[0]?.tanggal} – ${paginatedChartData[paginatedChartData.length - 1]?.tanggal}`
     : '';
@@ -221,14 +236,14 @@ export default function DashboardPage() {
       {/* ── FILTER ── */}
       <FilterBar
         onFilter={handleFilter}
-        onReset={() => loadData()}
+        onReset={handleFilterReset}
         onCompare={handleCompare}
         onCompareReset={handleCompareReset}
       />
 
-      {/* ── METRICS — 5 kartu terpisah dengan accent kiri ── */}
+      {/* ── METRICS ── */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        {metrics.map((m, i) => {
+        {metrics.map((m: any, i) => {
           const Icon = m.icon;
           const numVal = typeof m.value === 'string' ? parseFloat(m.value) : m.value;
           const numCmp = m.compareRaw !== undefined ? m.compareRaw : (typeof m.compareVal === 'string' ? parseFloat(m.compareVal) : m.compareVal as number);
@@ -238,15 +253,34 @@ export default function DashboardPage() {
           return (
             <div key={i} className="bg-white border border-gray-200 rounded-lg overflow-hidden flex">
               <div className="w-1 flex-shrink-0" style={{ background: m.accent }} />
-              <div className="flex-1 px-5 pt-3 pb-4.5 flex flex-col justify-between">
+              <div className="flex-1 px-4 pt-3 pb-3 flex flex-col justify-between">
+                {/* Label + Icon */}
                 <div className="flex items-center justify-between">
                   <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">{m.label}</p>
                   <div className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0" style={{ background: m.accentBg }}>
                     <Icon size={14} style={{ color: m.accent }} />
                   </div>
                 </div>
-                <p className="text-[30px] font-bold text-gray-900 leading-none tabular-nums my-3">{m.value}</p>
-                <div className="flex items-center justify-between">
+
+                {/* Nilai utama */}
+                <p className="text-[28px] font-bold text-gray-900 leading-none tabular-nums mt-2">{m.value}</p>
+
+                {/* Avg Leads/Day — hanya di card Total Leads saat filter/compare aktif */}
+                {i === 0 && m.avgA !== null && (
+                  <div className="mt-1.5 flex items-center gap-1.5">
+                    <span className="text-[10px] text-gray-400">Avg/hari:</span>
+                    <span className="text-[11px] font-bold text-blue-600">{m.avgA}</span>
+                    {m.avgB !== null && compareData && (
+                      <>
+                        <span className="text-[10px] text-gray-300">vs</span>
+                        <span className="text-[11px] font-bold text-gray-400">{m.avgB}</span>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Sub + compare diff */}
+                <div className="flex items-center justify-between mt-2">
                   <p className="text-[11px] text-gray-400">{m.sub}</p>
                   {pct !== null ? (
                     <span className={`flex items-center gap-0.5 text-[11px] font-bold ${diff! >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
@@ -288,14 +322,8 @@ export default function DashboardPage() {
                 </>
               ) : (
                 <>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-5 h-[2px] bg-blue-500 inline-block rounded-full" />
-                    Web A
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-5 h-[2px] bg-amber-400 inline-block rounded-full" />
-                    WA A
-                  </span>
+                  <span className="flex items-center gap-1.5"><span className="w-5 h-[2px] bg-blue-500 inline-block rounded-full" /> Web A</span>
+                  <span className="flex items-center gap-1.5"><span className="w-5 h-[2px] bg-amber-400 inline-block rounded-full" /> WA A</span>
                   <span className="flex items-center gap-1.5 opacity-80">
                     <svg width="20" height="4" viewBox="0 0 20 4"><line x1="0" y1="2" x2="20" y2="2" stroke="#93c5fd" strokeWidth="2" strokeDasharray="4 2" /></svg>
                     Web B
@@ -325,10 +353,7 @@ export default function DashboardPage() {
                   <CartesianGrid strokeDasharray="3 0" vertical={false} stroke="#f1f3f5" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 500 }} dy={6} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 500 }} width={24} />
-                  <Tooltip
-                    contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', fontSize: 12, padding: '8px 12px' }}
-                    cursor={{ stroke: '#e5e7eb', strokeWidth: 1 }}
-                  />
+                  <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', fontSize: 12, padding: '8px 12px' }} cursor={{ stroke: '#e5e7eb', strokeWidth: 1 }} />
                   <Area type="monotone" dataKey="orderWeb" stroke="#3b82f6" strokeWidth={2} fill="url(#gWeb)" name="Order Web" dot={false} />
                   <Area type="monotone" dataKey="orderWaOts" stroke="#f59e0b" strokeWidth={2} fill="url(#gWa)" name="WA/OTS" dot={false} />
                 </ComposedChart>
@@ -402,14 +427,8 @@ export default function DashboardPage() {
             </div>
             {compareData && (
               <div className="flex gap-2.5 text-[11px] font-medium text-gray-500 flex-shrink-0">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-sm inline-block bg-blue-500" />
-                  {compareData.labelA.split(' ')[0]}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-sm inline-block bg-blue-200" />
-                  {compareData.labelB.split(' ')[0]}
-                </span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block bg-blue-500" />{compareData.labelA.split(' ')[0]}</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block bg-blue-200" />{compareData.labelB.split(' ')[0]}</span>
               </div>
             )}
           </div>
@@ -420,11 +439,7 @@ export default function DashboardPage() {
                   <CartesianGrid strokeDasharray="3 0" vertical={false} stroke="#f1f3f5" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 500 }} dy={6} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 500 }} width={24} />
-                  <Tooltip
-                    cursor={{ fill: '#f9fafb' }}
-                    contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', fontSize: 12, padding: '8px 12px' }}
-                    formatter={(v: any) => [`${Number(v).toFixed(1)}%`, "CR"]}
-                  />
+                  <Tooltip cursor={{ fill: '#f9fafb' }} contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', fontSize: 12, padding: '8px 12px' }} formatter={(v: any) => [`${Number(v).toFixed(1)}%`, "CR"]} />
                   <Bar dataKey="cr" radius={[3, 3, 0, 0]}>
                     {paginatedChartData.map((entry, index) => (
                       <Cell key={index} fill={entry.cr > 15 ? '#3b82f6' : '#e5e7eb'} />
@@ -440,9 +455,7 @@ export default function DashboardPage() {
                     nameA: groupedA[i]?.name ?? '-',
                     nameB: groupedB[i]?.name ?? '-',
                   }))}
-                  margin={{ left: -10, right: 4 }}
-                  barCategoryGap="30%"
-                  barGap={2}
+                  margin={{ left: -10, right: 4 }} barCategoryGap="30%" barGap={2}
                 >
                   <CartesianGrid strokeDasharray="3 0" vertical={false} stroke="#f1f3f5" />
                   <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 500 }} dy={6} tickFormatter={v => `H${v}`} />
@@ -450,7 +463,7 @@ export default function DashboardPage() {
                   <Tooltip
                     cursor={{ fill: '#f9fafb' }}
                     contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', fontSize: 12, padding: '8px 12px' }}
-                    content={({ active, payload, label }) => {
+                    content={({ active, payload }) => {
                       if (!active || !payload?.length) return null;
                       const d = payload[0]?.payload;
                       return (
@@ -493,7 +506,6 @@ export default function DashboardPage() {
         </div>
         <div className="overflow-x-auto">
           {!compareData ? (
-            /* ── MODE NORMAL ── */
             <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/60">
@@ -529,7 +541,6 @@ export default function DashboardPage() {
               </tbody>
             </table>
           ) : (
-            /* ── MODE COMPARE: atas-bawah per hari, dipaginasi ── */
             <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/60">
@@ -552,14 +563,10 @@ export default function DashboardPage() {
                   const totalA = a ? a.orderWeb + a.orderWaOts : null;
                   const totalB = b ? b.orderWeb + b.orderWaOts : null;
                   const diff = totalA !== null && totalB !== null ? totalA - totalB : null;
-
                   return (
                     <React.Fragment key={i}>
-                      {/* Baris Periode A */}
                       <tr className="border-b border-gray-50 bg-blue-50/20 hover:bg-blue-50/40 transition-colors">
-                        <td className="px-5 py-2.5" rowSpan={2}>
-                          <span className="text-[11px] font-bold text-gray-400">{i + 1}</span>
-                        </td>
+                        <td className="px-5 py-2.5" rowSpan={2}><span className="text-[11px] font-bold text-gray-400">{i + 1}</span></td>
                         <td className="px-5 py-2.5">
                           <div className="flex items-center gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
@@ -581,13 +588,9 @@ export default function DashboardPage() {
                           </span>
                         </td>
                         <td className="px-5 py-2.5 text-right">
-                          {crA !== null
-                            ? <span className={`text-[12px] font-bold ${crA > 15 ? 'text-blue-600' : 'text-gray-400'}`}>{crA.toFixed(1)}%</span>
-                            : <span className="text-gray-300 text-[12px]">-</span>}
+                          {crA !== null ? <span className={`text-[12px] font-bold ${crA > 15 ? 'text-blue-600' : 'text-gray-400'}`}>{crA.toFixed(1)}%</span> : <span className="text-gray-300 text-[12px]">-</span>}
                         </td>
                       </tr>
-
-                      {/* Baris Periode B */}
                       <tr className="border-b border-gray-200 hover:bg-gray-50/40 transition-colors">
                         <td className="px-5 py-2.5">
                           <div className="flex items-center gap-2">
@@ -601,9 +604,7 @@ export default function DashboardPage() {
                         <td className="px-5 py-2.5 text-[13px] text-right text-gray-400 tabular-nums">{b?.orderWaOts ?? '-'}</td>
                         <td className="px-5 py-2.5 text-[13px] text-right font-bold text-gray-500 tabular-nums">{totalB ?? '-'}</td>
                         <td className="px-5 py-2.5 text-right">
-                          {crB !== null
-                            ? <span className={`text-[12px] font-bold ${crB > 15 ? 'text-blue-400' : 'text-gray-300'}`}>{crB.toFixed(1)}%</span>
-                            : <span className="text-gray-300 text-[12px]">-</span>}
+                          {crB !== null ? <span className={`text-[12px] font-bold ${crB > 15 ? 'text-blue-400' : 'text-gray-300'}`}>{crB.toFixed(1)}%</span> : <span className="text-gray-300 text-[12px]">-</span>}
                         </td>
                       </tr>
                     </React.Fragment>
@@ -626,21 +627,16 @@ export default function DashboardPage() {
                 : `Menampilkan H${compareStartIdx + 1}–H${compareEndIdx} dari ${compareRowCount} hari`}
             </p>
             <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="h-7 w-7 flex items-center justify-center text-gray-500 border border-gray-200 rounded hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
+              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}
+                className="h-7 w-7 flex items-center justify-center text-gray-500 border border-gray-200 rounded hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
                 <ChevronLeft size={14} />
               </button>
               <span className="text-[12px] text-gray-500 font-medium px-2 tabular-nums">
                 {currentPage} / {!compareData ? totalPagesNormal : totalPagesCompare}
               </span>
-              <button
-                onClick={() => setCurrentPage(p => Math.min(!compareData ? totalPagesNormal : totalPagesCompare, p + 1))}
+              <button onClick={() => setCurrentPage(p => Math.min(!compareData ? totalPagesNormal : totalPagesCompare, p + 1))}
                 disabled={currentPage === (!compareData ? totalPagesNormal : totalPagesCompare)}
-                className="h-7 w-7 flex items-center justify-center text-gray-500 border border-gray-200 rounded hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
+                className="h-7 w-7 flex items-center justify-center text-gray-500 border border-gray-200 rounded hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
                 <ChevronRight size={14} />
               </button>
             </div>
