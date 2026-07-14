@@ -9,6 +9,7 @@ interface MyLead {
   webMasuk: number;
   orderWeb: number;
   orderWaOts: number;
+  products: string[];
 }
 
 export default function InputManualPage() {
@@ -20,7 +21,9 @@ export default function InputManualPage() {
 
   // Edit state
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ tanggal: '', webMasuk: 0, orderWeb: 0, orderWaOts: 0 });
+  const [editForm, setEditForm] = useState({
+    tanggal: '', webMasuk: 0, orderWeb: 0, orderWaOts: 0, products: [] as string[]
+  });
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -28,14 +31,14 @@ export default function InputManualPage() {
     tanggal: new Date().toISOString().split('T')[0],
     webMasuk: '0',
     orderWaOts: '0',
-    orderWeb: '0'
+    orderWeb: '0',
+    products: [] as string[],
   });
 
   useEffect(() => {
     document.title = 'Input Data';
     const role = localStorage.getItem('user_role') || '';
     setUserRole(role);
-    // Hanya fetch riwayat kalau bukan admin
     if (role !== 'ADMIN') fetchMyLeads();
     else setLoadingLeads(false);
   }, []);
@@ -67,6 +70,26 @@ export default function InputManualPage() {
     }
   };
 
+  // Toggle produk di form utama
+  const toggleProduct = (product: string) => {
+    setFormData(prev => ({
+      ...prev,
+      products: prev.products.includes(product)
+        ? prev.products.filter(p => p !== product)
+        : [...prev.products, product],
+    }));
+  };
+
+  // Toggle produk di form edit
+  const toggleEditProduct = (product: string) => {
+    setEditForm(prev => ({
+      ...prev,
+      products: prev.products.includes(product)
+        ? prev.products.filter(p => p !== product)
+        : [...prev.products, product],
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -85,11 +108,15 @@ export default function InputManualPage() {
           webMasuk: Number(formData.webMasuk),
           orderWaOts: Number(formData.orderWaOts),
           orderWeb: Number(formData.orderWeb),
-          userId: Number(currentUserId)
+          userId: Number(currentUserId),
+          products: formData.products,
         }),
       });
       if (res.ok) {
-        setFormData({ tanggal: new Date().toISOString().split('T')[0], webMasuk: '0', orderWaOts: '0', orderWeb: '0' });
+        setFormData({
+          tanggal: new Date().toISOString().split('T')[0],
+          webMasuk: '0', orderWaOts: '0', orderWeb: '0', products: []
+        });
         if (userRole !== 'ADMIN') fetchMyLeads();
       } else {
         const errorResponse = await res.json();
@@ -109,6 +136,7 @@ export default function InputManualPage() {
       webMasuk: lead.webMasuk,
       orderWeb: lead.orderWeb,
       orderWaOts: lead.orderWaOts,
+      products: lead.products ?? [],
     });
   };
 
@@ -153,6 +181,20 @@ export default function InputManualPage() {
     ? ((totalOrder / Number(formData.webMasuk)) * 100).toFixed(1)
     : '0.0';
 
+
+  const [productOptions, setProductOptions] = useState<string[]>([]);
+    useEffect(() => {
+      fetch('/api/products')
+        .then(res => res.json())
+        .then(data => {
+          const names = Array.isArray(data)
+            ? data.filter((p: any) => p.aktif !== false).map((p: any) => p.nama).filter(Boolean)
+            : [];
+          if (names.length > 0) setProductOptions(names);
+        })
+        .catch((err) => console.error('Fetch products error:', err));
+    }, []);
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -182,17 +224,22 @@ export default function InputManualPage() {
 
           {/* Fields */}
           <div className="px-8 py-6 space-y-5">
+            {/* Tanggal */}
             <div>
               <label className={labelClass}>Pilih Tanggal</label>
               <input type="date" required className={inputClass}
                 value={formData.tanggal.split('T')[0]} onChange={handleDateChange} />
             </div>
+
+            {/* Web Masuk */}
             <div>
               <label className={labelClass}>Web Masuk</label>
               <input type="number" required placeholder="0" className={inputClass}
                 value={formData.webMasuk}
                 onChange={(e) => setFormData({ ...formData, webMasuk: e.target.value })} />
             </div>
+
+            {/* Order grid */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={labelClass}>Order WA / OTS</label>
@@ -206,6 +253,41 @@ export default function InputManualPage() {
                   value={formData.orderWeb}
                   onChange={(e) => setFormData({ ...formData, orderWeb: e.target.value })} />
               </div>
+            </div>
+
+            {/* ── PRODUK MULTI-SELECT ── */}
+            <div>
+              <label className={labelClass}>
+                Produk Terjual
+                <span className="ml-2 text-[10px] normal-case font-normal text-gray-400">
+                  (pilih semua yang terjual hari ini)
+                </span>
+              </label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {productOptions.map((product) => {
+                  const selected = formData.products.includes(product);
+                  return (
+                    <button
+                      key={product}
+                      type="button"
+                      onClick={() => toggleProduct(product)}
+                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded text-[12px] font-medium border transition-all ${
+                        selected
+                          ? 'bg-gray-900 text-white border-gray-900'
+                          : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400 hover:bg-gray-50'
+                      }`}
+                    >
+                      {selected && <Check size={11} />}
+                      {product}
+                    </button>
+                  );
+                })}
+              </div>
+              {formData.products.length > 0 && (
+                <p className="text-[11px] text-blue-600 font-medium mt-2">
+                  {formData.products.length} produk dipilih: {formData.products.join(', ')}
+                </p>
+              )}
             </div>
           </div>
 
@@ -239,7 +321,7 @@ export default function InputManualPage() {
           </div>
         </form>
 
-        {/* ── RIWAYAT INPUT — hanya untuk STAFF, bukan ADMIN ── */}
+        {/* ── RIWAYAT INPUT — hanya untuk STAFF ── */}
         {userRole !== 'ADMIN' && (
           <div className="bg-white border border-gray-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
@@ -253,7 +335,7 @@ export default function InputManualPage() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[580px]">
+              <table className="w-full min-w-[640px]">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50/60">
                     <th className="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Tanggal</th>
@@ -261,16 +343,17 @@ export default function InputManualPage() {
                     <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order Web</th>
                     <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">WA/OTS</th>
                     <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">CR</th>
+                    <th className="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Produk</th>
                     <th className="px-5 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-wider">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loadingLeads ? (
-                    <tr><td colSpan={6} className="text-center py-10 text-gray-400 text-sm">
+                    <tr><td colSpan={7} className="text-center py-10 text-gray-400 text-sm">
                       <Loader2 className="animate-spin inline mr-2" size={14} /> Memuat...
                     </td></tr>
                   ) : myLeads.length === 0 ? (
-                    <tr><td colSpan={6} className="text-center py-10 text-gray-400 text-sm">Belum ada data.</td></tr>
+                    <tr><td colSpan={7} className="text-center py-10 text-gray-400 text-sm">Belum ada data.</td></tr>
                   ) : myLeads.map((lead) => {
                     const isEditing = editingId === lead.id;
                     const crVal = lead.webMasuk > 0
@@ -307,6 +390,29 @@ export default function InputManualPage() {
                             <td className="px-5 py-3 text-right">
                               <span className="text-[11px] text-gray-300">auto</span>
                             </td>
+                            {/* Edit produk inline */}
+                            <td className="px-5 py-3">
+                              <div className="flex flex-wrap gap-1.5">
+                                {productOptions.map((product) => {
+                                  const sel = editForm.products.includes(product);
+                                  return (
+                                    <button
+                                      key={product}
+                                      type="button"
+                                      onClick={() => toggleEditProduct(product)}
+                                      className={`flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium border transition-all ${
+                                        sel
+                                          ? 'bg-gray-900 text-white border-gray-900'
+                                          : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                                      }`}
+                                    >
+                                      {sel && <Check size={9} />}
+                                      {product}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </td>
                             <td className="px-5 py-3">
                               <div className="flex items-center justify-center gap-2">
                                 <button onClick={() => saveEdit(lead.id)} disabled={savingEdit}
@@ -330,6 +436,20 @@ export default function InputManualPage() {
                               <span className={`text-[12px] font-bold ${Number(crVal) > 15 ? 'text-blue-600' : 'text-gray-400'}`}>
                                 {crVal}%
                               </span>
+                            </td>
+                            {/* Tampilan produk sebagai chips */}
+                            <td className="px-5 py-3.5">
+                              {lead.products && lead.products.length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {lead.products.map((p) => (
+                                    <span key={p} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-medium rounded">
+                                      {p}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-[11px] text-gray-300">—</span>
+                              )}
                             </td>
                             <td className="px-5 py-3.5">
                               <div className="flex items-center justify-center gap-2">

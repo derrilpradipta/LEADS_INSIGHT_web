@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard, FileInput, Shield,
-  BarChart3, LogOut, Menu, X, Database
+  BarChart3, LogOut, Menu, X, Database, Package
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -34,6 +34,7 @@ export default function Sidebar() {
     ...(role === 'ADMIN' ? [
       { name: 'Leads Control', icon: Database, path: '/dashboard/leads-control' },
       { name: 'User Control', icon: Shield, path: '/dashboard/user' },
+      { name: 'Products Control', icon: Package, path: '/dashboard/products' },
       { name: 'Conversion Analysis', icon: BarChart3, path: '/dashboard/analysis' },
     ] : []),
   ];

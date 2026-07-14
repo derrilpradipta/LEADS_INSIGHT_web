@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 
-// 1. LOGIKA UNTUK MENYIMPAN DATA (POST)
+// POST — simpan data baru
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { tanggal, webMasuk, orderWaOts, orderWeb, userId } = body;
+    const { tanggal, webMasuk, orderWaOts, orderWeb, userId, products } = body;
 
-    // Validasi data dasar
     if (!userId) {
       return NextResponse.json({ message: "User ID tidak valid" }, { status: 400 });
     }
@@ -18,8 +17,8 @@ export async function POST(request: Request) {
         webMasuk: Number(webMasuk),
         orderWaOts: Number(orderWaOts),
         orderWeb: Number(orderWeb),
-        // Tambahkan baris ini karena bersifat 'required' di schema kamu
-        closingRate: (Number(orderWaOts) + Number(orderWeb)) / (Number(webMasuk) || 1), 
+        closingRate: (Number(orderWaOts) + Number(orderWeb)) / (Number(webMasuk) || 1),
+        products: products ?? [],  // ← tambah ini
         user: {
           connect: { id: Number(userId) }
         }
@@ -33,7 +32,7 @@ export async function POST(request: Request) {
   }
 }
 
-// 2. LOGIKA UNTUK MENGAMBIL DATA (GET) DENGAN FILTER ROLE
+// GET — ambil data dengan filter role
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -67,6 +66,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(leads);
   } catch (error) {
+    console.error("Error GET Leads:", error);
     return NextResponse.json({ message: "Gagal ambil data" }, { status: 500 });
   }
 }

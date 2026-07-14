@@ -14,6 +14,7 @@ interface Lead {
   orderWeb: number;
   orderWaOts: number;
   closingRate: number;
+  products: string[];
 }
 
 interface CompareData {
@@ -26,13 +27,17 @@ interface CompareData {
 const ROWS_PER_PAGE = 7;
 
 function groupLeadsByDate(data: Lead[]) {
-  const map: Record<string, { tanggal: string; name: string; webMasuk: number; orderWeb: number; orderWaOts: number }> = {};
+  const map: Record<string, { tanggal: string; name: string; webMasuk: number; orderWeb: number; orderWaOts: number; products: string[] }> = {};
   [...data].sort((a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime()).forEach((curr) => {
     const dateKey = new Date(curr.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    if (!map[dateKey]) map[dateKey] = { tanggal: dateKey, name: dateKey.substring(0, 5), webMasuk: 0, orderWeb: 0, orderWaOts: 0 };
+    if (!map[dateKey]) map[dateKey] = { tanggal: dateKey, name: dateKey.substring(0, 5), webMasuk: 0, orderWeb: 0, orderWaOts: 0, products: [] };
     map[dateKey].webMasuk += Number(curr.webMasuk);
     map[dateKey].orderWeb += Number(curr.orderWeb);
     map[dateKey].orderWaOts += Number(curr.orderWaOts);
+    // Merge produk, deduplicate
+    (curr.products ?? []).forEach(p => {
+      if (!map[dateKey].products.includes(p)) map[dateKey].products.push(p);
+    });
   });
   return Object.values(map);
 }
@@ -510,31 +515,45 @@ export default function DashboardPage() {
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/60">
                   <th className="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Tanggal</th>
-                  <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Web Masuk</th>
-                  <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order Web</th>
-                  <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order WA/OTS</th>
-                  <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total</th>
-                  <th className="px-5 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-wider">CR</th>
+                  <th className="px-5 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-wider">Web Masuk</th>
+                  <th className="px-5 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order Web</th>
+                  <th className="px-5 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-wider">Order WA/OTS</th>
+                  <th className="px-5 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total</th>
+                  <th className="px-5 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-wider">CR</th>
+                  <th className="px-5 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-wider">Produk</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={6} className="text-center py-14 text-gray-400 text-sm">
+                  <tr><td colSpan={7} className="text-center py-14 text-gray-400 text-sm">
                     <Loader2 className="animate-spin inline mr-2" size={15} /> Memuat data...
                   </td></tr>
                 ) : paginatedNormalData.length === 0 ? (
-                  <tr><td colSpan={6} className="text-center py-14 text-gray-400 text-sm">Tidak ada data.</td></tr>
+                  <tr><td colSpan={7} className="text-center py-14 text-gray-400 text-sm">Tidak ada data.</td></tr>
                 ) : paginatedNormalData.map((item, index) => (
                   <tr key={index} className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors">
                     <td className="px-5 py-3.5 text-[13px] font-semibold text-gray-700">{item.tanggal}</td>
-                    <td className="px-5 py-3.5 text-[13px] text-right text-gray-600 tabular-nums">{item.webMasuk}</td>
-                    <td className="px-5 py-3.5 text-[13px] text-right text-gray-600 tabular-nums">{item.orderWeb}</td>
-                    <td className="px-5 py-3.5 text-[13px] text-right text-gray-600 tabular-nums">{item.orderWaOts}</td>
-                    <td className="px-5 py-3.5 text-[13px] text-right font-bold text-gray-900 tabular-nums">{item.orderWeb + item.orderWaOts}</td>
-                    <td className="px-5 py-3.5 text-right">
+                    <td className="px-5 py-3.5 text-[13px] text-center text-gray-600 tabular-nums">{item.webMasuk}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-center text-gray-600 tabular-nums">{item.orderWeb}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-center text-gray-600 tabular-nums">{item.orderWaOts}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-center font-bold text-gray-900 tabular-nums">{item.orderWeb + item.orderWaOts}</td>
+                    <td className="px-5 py-3.5 text-center">
                       <span className={`text-[12px] font-bold ${item.cr > 15 ? 'text-blue-600' : 'text-gray-400'}`}>
                         {item.cr.toFixed(1)}%
                       </span>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      {item.products && item.products.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {item.products.map((p) => (
+                            <span key={p} className="px-2 py-0.5 bg-gray-100 text-gray-500 text-[10px] font-medium rounded">
+                              {p}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-[11px] text-gray-300">—</span>
+                      )}
                     </td>
                   </tr>
                 ))}

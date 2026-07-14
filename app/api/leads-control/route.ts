@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 
-
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -39,7 +38,7 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const { id, tanggal, webMasuk, orderWaOts, orderWeb } = await request.json();
+    const { id, tanggal, webMasuk, orderWaOts, orderWeb, products } = await request.json();
     const updated = await prisma.lead.update({
       where: { id },
       data: {
@@ -48,6 +47,7 @@ export async function PATCH(request: Request) {
         orderWaOts: Number(orderWaOts),
         orderWeb: Number(orderWeb),
         closingRate: (Number(orderWaOts) + Number(orderWeb)) / (Number(webMasuk) || 1),
+        products: products ?? [],  // ← tambah ini
       },
     });
     return NextResponse.json(updated);

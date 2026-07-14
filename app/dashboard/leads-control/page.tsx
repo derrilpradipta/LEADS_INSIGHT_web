@@ -11,6 +11,7 @@ interface Lead {
   orderWaOts: number;
   orderWeb: number;
   closingRate: number;
+  products: string[];
   user: { id: number; nama: string; username: string };
 }
 
@@ -18,12 +19,23 @@ interface GroupedByDate {
   [date: string]: Lead[];
 }
 
+const PRODUCT_OPTIONS = [
+  'Tumbler',
+  'Poster',
+  'Gantungan Kunci',
+  'Gelang Lanyard',
+  'Gelang Kertas',
+  'X Banner',
+];
+
 export default function LeadsControlPage() {
   const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ tanggal: "", webMasuk: 0, orderWaOts: 0, orderWeb: 0 });
+  const [editForm, setEditForm] = useState({
+    tanggal: "", webMasuk: 0, orderWaOts: 0, orderWeb: 0, products: [] as string[]
+  });
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,7 +64,6 @@ export default function LeadsControlPage() {
     }
   };
 
-  // Group by date
   const grouped: GroupedByDate = leads.reduce((acc, lead) => {
     const dateKey = new Date(lead.tanggal).toLocaleDateString("id-ID", {
       weekday: "long", day: "2-digit", month: "long", year: "numeric",
@@ -69,7 +80,17 @@ export default function LeadsControlPage() {
       webMasuk: lead.webMasuk,
       orderWaOts: lead.orderWaOts,
       orderWeb: lead.orderWeb,
+      products: lead.products ?? [],
     });
+  };
+
+  const toggleEditProduct = (product: string) => {
+    setEditForm(prev => ({
+      ...prev,
+      products: prev.products.includes(product)
+        ? prev.products.filter(p => p !== product)
+        : [...prev.products, product],
+    }));
   };
 
   const saveEdit = async (id: string) => {
@@ -139,38 +160,58 @@ export default function LeadsControlPage() {
             const totalOrder = totalOrderWeb + totalOrderWa;
             const totalCR = totalWeb > 0 ? ((totalOrder / totalWeb) * 100).toFixed(1) : "0";
 
+            // Semua produk unik hari itu dari semua staff
+            const allProducts = Array.from(
+              new Set(dayLeads.flatMap(l => l.products ?? []))
+            );
+
             return (
               <div key={date} className="bg-white border border-gray-200 overflow-hidden">
                 {/* Date Header */}
-                <div className="px-6 py-3.5 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                  <h2 className="font-semibold text-gray-700 text-sm">{date}</h2>
-                  <div className="flex flex-wrap gap-2 text-[10px] font-medium">
-                    <span className="bg-white px-2.5 py-1 border border-gray-200 text-blue-600 rounded">
-                      Web Masuk: {totalWeb}
-                    </span>
-                    <span className="bg-white px-2.5 py-1 border border-gray-200 text-amber-600 rounded">
-                      Order Web: {totalOrderWeb}
-                    </span>
-                    <span className="bg-white px-2.5 py-1 border border-gray-200 text-gray-600 rounded">
-                      Order WA/OTS: {totalOrderWa}
-                    </span>
-                    <span className="bg-white px-2.5 py-1 border border-gray-200 text-emerald-600 rounded">
-                      Total: {totalOrder} ({totalCR}%)
-                    </span>
+                <div className="px-6 py-3.5 bg-gray-50 border-b border-gray-200 flex flex-col gap-2">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <h2 className="font-semibold text-gray-700 text-sm">{date}</h2>
+                    <div className="flex flex-wrap gap-2 text-[10px] font-medium">
+                      <span className="bg-white px-2.5 py-1 border border-gray-200 text-blue-600 rounded">
+                        Web Masuk: {totalWeb}
+                      </span>
+                      <span className="bg-white px-2.5 py-1 border border-gray-200 text-amber-600 rounded">
+                        Order Web: {totalOrderWeb}
+                      </span>
+                      <span className="bg-white px-2.5 py-1 border border-gray-200 text-gray-600 rounded">
+                        Order WA/OTS: {totalOrderWa}
+                      </span>
+                      <span className="bg-white px-2.5 py-1 border border-gray-200 text-emerald-600 rounded">
+                        Total: {totalOrder} ({totalCR}%)
+                      </span>
+                    </div>
                   </div>
+
+                  {/* Ringkasan produk hari itu */}
+                  {allProducts.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Produk terjual:</span>
+                      {allProducts.map(p => (
+                        <span key={p} className="px-2 py-0.5 bg-white border border-gray-200 text-[10px] font-medium text-gray-600 rounded">
+                          {p}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Table */}
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left min-w-[700px]">
+                  <table className="w-full text-left min-w-[820px]">
                     <thead>
                       <tr className="border-b border-gray-100 bg-gray-50/50">
                         <th className="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Staff</th>
                         <th className="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider text-center">Web Masuk</th>
                         <th className="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider text-center">Order Web</th>
                         <th className="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider text-center">Order WA/OTS</th>
-                        <th className="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider text-center">Total Order</th>
+                        <th className="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider text-center">Total</th>
                         <th className="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider text-center">CR</th>
+                        <th className="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Produk</th>
                         <th className="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider text-center">Aksi</th>
                       </tr>
                     </thead>
@@ -183,6 +224,7 @@ export default function LeadsControlPage() {
 
                         return (
                           <tr key={lead.id} className={`transition-colors ${isEditing ? "bg-blue-50/30" : "hover:bg-gray-50/50"}`}>
+                            {/* Staff */}
                             <td className="px-6 py-3">
                               <div className="flex items-center gap-2.5">
                                 <div className="w-7 h-7 rounded bg-gray-100 flex items-center justify-center text-gray-600 font-semibold text-xs flex-shrink-0">
@@ -197,6 +239,7 @@ export default function LeadsControlPage() {
 
                             {isEditing ? (
                               <>
+                                {/* Input angka */}
                                 <td className="px-3 py-2 text-center">
                                   <input type="number" value={editForm.webMasuk}
                                     onChange={e => setEditForm(f => ({ ...f, webMasuk: +e.target.value }))}
@@ -218,6 +261,32 @@ export default function LeadsControlPage() {
                                 <td className="px-6 py-3 text-center">
                                   <span className="text-xs text-gray-400">auto</span>
                                 </td>
+
+                                {/* Multi-select produk saat edit */}
+                                <td className="px-4 py-2">
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {PRODUCT_OPTIONS.map((product) => {
+                                      const selected = editForm.products.includes(product);
+                                      return (
+                                        <button
+                                          key={product}
+                                          type="button"
+                                          onClick={() => toggleEditProduct(product)}
+                                          className={`flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium border transition-all ${
+                                            selected
+                                              ? 'bg-gray-900 text-white border-gray-900'
+                                              : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400 hover:bg-gray-50'
+                                          }`}
+                                        >
+                                          {selected && <Check size={9} />}
+                                          {product}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </td>
+
+                                {/* Aksi simpan/batal */}
                                 <td className="px-6 py-3 text-center">
                                   <div className="flex items-center justify-center gap-1.5">
                                     <button onClick={() => saveEdit(lead.id)}
@@ -241,6 +310,20 @@ export default function LeadsControlPage() {
                                   <span className={`px-2 py-0.5 text-xs font-medium rounded ${+cr > 15 ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}>
                                     {cr}%
                                   </span>
+                                </td>
+                                {/* Kolom produk */}
+                                <td className="px-6 py-3">
+                                  {lead.products && lead.products.length > 0 ? (
+                                    <div className="flex flex-wrap gap-1">
+                                      {lead.products.map(p => (
+                                        <span key={p} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-medium rounded">
+                                          {p}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span className="text-[11px] text-gray-300">—</span>
+                                  )}
                                 </td>
                                 <td className="px-6 py-3 text-center">
                                   <div className="flex items-center justify-center gap-1.5">

@@ -4,13 +4,12 @@ import { prisma } from "@/app/lib/prisma";
 // PATCH — staff edit data milik sendiri
 export async function PATCH(request: Request) {
   try {
-    const { id, userId, tanggal, webMasuk, orderWeb, orderWaOts } = await request.json();
+    const { id, userId, tanggal, webMasuk, orderWeb, orderWaOts, products } = await request.json();
 
     if (!id || !userId) {
       return NextResponse.json({ message: "Data tidak lengkap" }, { status: 400 });
     }
 
-    // Pastikan data ini memang milik user yang request
     const existing = await prisma.lead.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ message: "Data tidak ditemukan" }, { status: 404 });
@@ -26,6 +25,8 @@ export async function PATCH(request: Request) {
         webMasuk: Number(webMasuk),
         orderWeb: Number(orderWeb),
         orderWaOts: Number(orderWaOts),
+        closingRate: (Number(orderWaOts) + Number(orderWeb)) / (Number(webMasuk) || 1),
+        products: products ?? [],  // ← tambah ini
       },
     });
 
@@ -45,7 +46,6 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ message: "Data tidak lengkap" }, { status: 400 });
     }
 
-    // Pastikan data ini memang milik user yang request
     const existing = await prisma.lead.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ message: "Data tidak ditemukan" }, { status: 404 });
