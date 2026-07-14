@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { Loader2, CheckCircle2, ChevronRight, FileText, Pencil, Trash2, X, Check } from 'lucide-react';
+import { Loader2, CheckCircle2, ChevronRight, FileText, Pencil, Trash2, X, Check, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface MyLead {
@@ -34,6 +34,10 @@ export default function InputManualPage() {
     orderWeb: '0',
     products: [] as string[],
   });
+
+  // Search produk — form utama & form edit terpisah
+  const [productSearch, setProductSearch] = useState("");
+  const [editProductSearch, setEditProductSearch] = useState("");
 
   useEffect(() => {
     document.title = 'Input Data';
@@ -117,6 +121,7 @@ export default function InputManualPage() {
           tanggal: new Date().toISOString().split('T')[0],
           webMasuk: '0', orderWaOts: '0', orderWeb: '0', products: []
         });
+        setProductSearch('');
         if (userRole !== 'ADMIN') fetchMyLeads();
       } else {
         const errorResponse = await res.json();
@@ -138,6 +143,7 @@ export default function InputManualPage() {
       orderWaOts: lead.orderWaOts,
       products: lead.products ?? [],
     });
+    setEditProductSearch('');
   };
 
   const saveEdit = async (id: string) => {
@@ -181,19 +187,26 @@ export default function InputManualPage() {
     ? ((totalOrder / Number(formData.webMasuk)) * 100).toFixed(1)
     : '0.0';
 
-
   const [productOptions, setProductOptions] = useState<string[]>([]);
-    useEffect(() => {
-      fetch('/api/products')
-        .then(res => res.json())
-        .then(data => {
-          const names = Array.isArray(data)
-            ? data.filter((p: any) => p.aktif !== false).map((p: any) => p.nama).filter(Boolean)
-            : [];
-          if (names.length > 0) setProductOptions(names);
-        })
-        .catch((err) => console.error('Fetch products error:', err));
-    }, []);
+  useEffect(() => {
+    fetch('/api/products')
+      .then(res => res.json())
+      .then(data => {
+        const names = Array.isArray(data)
+          ? data.filter((p: any) => p.aktif !== false).map((p: any) => p.nama).filter(Boolean)
+          : [];
+        if (names.length > 0) setProductOptions(names);
+      })
+      .catch((err) => console.error('Fetch products error:', err));
+  }, []);
+
+  // Hasil filter search untuk form utama & form edit
+  const filteredProductOptions = productOptions.filter(p =>
+    p.toLowerCase().includes(productSearch.toLowerCase())
+  );
+  const filteredEditProductOptions = productOptions.filter(p =>
+    p.toLowerCase().includes(editProductSearch.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -260,29 +273,49 @@ export default function InputManualPage() {
               <label className={labelClass}>
                 Produk Terjual
                 <span className="ml-2 text-[10px] normal-case font-normal text-gray-400">
-                  (pilih semua yang terjual hari ini)
+                  (pilih semua yang terjual hari ini, bisa lebih dari satu)
                 </span>
               </label>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {productOptions.map((product) => {
-                  const selected = formData.products.includes(product);
-                  return (
-                    <button
-                      key={product}
-                      type="button"
-                      onClick={() => toggleProduct(product)}
-                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded text-[12px] font-medium border transition-all ${
-                        selected
-                          ? 'bg-gray-900 text-white border-gray-900'
-                          : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400 hover:bg-gray-50'
-                      }`}
-                    >
-                      {selected && <Check size={11} />}
-                      {product}
-                    </button>
-                  );
-                })}
+
+              {/* Search filter produk */}
+              <div className="relative mt-1 mb-2">
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Cari produk..."
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  className="w-full border border-gray-200 rounded pl-8 pr-3 py-2 text-[13px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
               </div>
+
+              {/* Area chip dengan scroll internal, tidak mendorong form ke bawah */}
+              <div className="max-h-56 overflow-y-auto border border-gray-100 rounded-md p-3 bg-gray-50/40">
+                <div className="flex flex-wrap gap-2">
+                  {filteredProductOptions.map((product) => {
+                    const selected = formData.products.includes(product);
+                    return (
+                      <button
+                        key={product}
+                        type="button"
+                        onClick={() => toggleProduct(product)}
+                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded text-[12px] font-medium border transition-all ${
+                          selected
+                            ? 'bg-gray-900 text-white border-gray-900'
+                            : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400 hover:bg-gray-50'
+                        }`}
+                      >
+                        {selected && <Check size={11} />}
+                        {product}
+                      </button>
+                    );
+                  })}
+                  {filteredProductOptions.length === 0 && (
+                    <p className="text-[12px] text-gray-400 py-2">Produk tidak ditemukan.</p>
+                  )}
+                </div>
+              </div>
+
               {formData.products.length > 0 && (
                 <p className="text-[11px] text-blue-600 font-medium mt-2">
                   {formData.products.length} produk dipilih: {formData.products.join(', ')}
@@ -392,25 +425,40 @@ export default function InputManualPage() {
                             </td>
                             {/* Edit produk inline */}
                             <td className="px-5 py-3">
-                              <div className="flex flex-wrap gap-1.5">
-                                {productOptions.map((product) => {
-                                  const sel = editForm.products.includes(product);
-                                  return (
-                                    <button
-                                      key={product}
-                                      type="button"
-                                      onClick={() => toggleEditProduct(product)}
-                                      className={`flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium border transition-all ${
-                                        sel
-                                          ? 'bg-gray-900 text-white border-gray-900'
-                                          : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
-                                      }`}
-                                    >
-                                      {sel && <Check size={9} />}
-                                      {product}
-                                    </button>
-                                  );
-                                })}
+                              <div className="w-64">
+                                <div className="relative mb-1.5">
+                                  <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
+                                  <input
+                                    type="text"
+                                    placeholder="Cari..."
+                                    value={editProductSearch}
+                                    onChange={(e) => setEditProductSearch(e.target.value)}
+                                    className="w-full border border-gray-200 rounded pl-6 pr-2 py-1 text-[11px] focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+                                  />
+                                </div>
+                                <div className="max-h-32 overflow-y-auto flex flex-wrap gap-1.5 border border-gray-100 rounded p-2 bg-gray-50/40">
+                                  {filteredEditProductOptions.map((product) => {
+                                    const sel = editForm.products.includes(product);
+                                    return (
+                                      <button
+                                        key={product}
+                                        type="button"
+                                        onClick={() => toggleEditProduct(product)}
+                                        className={`flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium border transition-all ${
+                                          sel
+                                            ? 'bg-gray-900 text-white border-gray-900'
+                                            : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                                        }`}
+                                      >
+                                        {sel && <Check size={9} />}
+                                        {product}
+                                      </button>
+                                    );
+                                  })}
+                                  {filteredEditProductOptions.length === 0 && (
+                                    <p className="text-[11px] text-gray-400 py-1">Tidak ditemukan.</p>
+                                  )}
+                                </div>
                               </div>
                             </td>
                             <td className="px-5 py-3">
